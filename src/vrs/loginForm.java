@@ -5,8 +5,9 @@
  */
 package vrs;
 import admin.adminDashboard;
-import config.dbConnector;
+import employeeDashboard.employeeDashBoard;
 import java.sql.Connection;
+import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -25,19 +26,34 @@ public class loginForm extends javax.swing.JFrame {
         initComponents();
     }
         
-   public static boolean loginAcc(String username, String password) {
-    dbConnector connector = new dbConnector();
-    try {
-        // Corrected query with proper single quotes
-        String query = "SELECT * FROM tbl_users WHERE u_username = '" + username + "' AND u_password = '" + password + "'";
-        ResultSet resultSet = connector.getData(query);
+  public String loginAcc(String username, String password) {
+    String role = null; // Default to null (login failed)
 
-        return resultSet.next(); // Returns true if a matching record is found
-    } catch (SQLException ex) {
-        ex.printStackTrace(); // Print SQL error for debugging
-        return false;
+    try {
+        Connection con = DriverManager.getConnection("jdbc:mysql://localhost:3306/vrs", "root", "");
+        String sql = "SELECT u_role FROM tbl_users WHERE LOWER(u_username) = LOWER(?) AND u_password = ?";
+        PreparedStatement pst = con.prepareStatement(sql);
+        pst.setString(1, username);
+        pst.setString(2, password);
+        
+        System.out.println("Executing Query: " + pst.toString()); // Debugging SQL query
+        
+        ResultSet rs = pst.executeQuery();
+        
+        if (rs.next()) {
+            role = rs.getString("u_role"); // Get user role
+            System.out.println("Login Success - Role: " + role);
+        } else {
+            System.out.println("Login Failed - No matching user found.");
+        }
+        
+    } catch (SQLException e) {
+        e.printStackTrace(); // Print SQL error if any
     }
+    
+    return role; // Return role or null if login failed
 }
+
 
 
 
@@ -59,13 +75,13 @@ public class loginForm extends javax.swing.JFrame {
         jLabel1 = new javax.swing.JLabel();
         jLabel5 = new javax.swing.JLabel();
         jLabel6 = new javax.swing.JLabel();
-        pass = new javax.swing.JTextField();
+        u_pass = new javax.swing.JTextField();
         jLabel7 = new javax.swing.JLabel();
         jLabel8 = new javax.swing.JLabel();
         jButton1 = new javax.swing.JButton();
         jLabel9 = new javax.swing.JLabel();
         jLabel10 = new javax.swing.JLabel();
-        user = new javax.swing.JTextField();
+        u_user = new javax.swing.JTextField();
         jLabel11 = new javax.swing.JLabel();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
@@ -110,18 +126,18 @@ public class loginForm extends javax.swing.JFrame {
         jPanel1.add(jLabel5, new org.netbeans.lib.awtextra.AbsoluteConstraints(-400, 80, 610, 340));
 
         jLabel6.setFont(new java.awt.Font("Tahoma", 3, 18)); // NOI18N
-        jLabel6.setForeground(new java.awt.Color(255, 255, 102));
+        jLabel6.setForeground(new java.awt.Color(255, 255, 255));
         jLabel6.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         jLabel6.setText("Password");
         jPanel1.add(jLabel6, new org.netbeans.lib.awtextra.AbsoluteConstraints(260, 200, 190, 90));
 
-        pass.setBorder(javax.swing.BorderFactory.createBevelBorder(javax.swing.border.BevelBorder.RAISED));
-        pass.addActionListener(new java.awt.event.ActionListener() {
+        u_pass.setBorder(javax.swing.BorderFactory.createBevelBorder(javax.swing.border.BevelBorder.RAISED));
+        u_pass.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                passActionPerformed(evt);
+                u_passActionPerformed(evt);
             }
         });
-        jPanel1.add(pass, new org.netbeans.lib.awtextra.AbsoluteConstraints(310, 260, 210, 30));
+        jPanel1.add(u_pass, new org.netbeans.lib.awtextra.AbsoluteConstraints(310, 260, 210, 30));
 
         jLabel7.setFont(new java.awt.Font("Tahoma", 3, 18)); // NOI18N
         jLabel7.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
@@ -129,7 +145,7 @@ public class loginForm extends javax.swing.JFrame {
         jPanel1.add(jLabel7, new org.netbeans.lib.awtextra.AbsoluteConstraints(310, 70, 190, 90));
 
         jLabel8.setFont(new java.awt.Font("Tahoma", 3, 18)); // NOI18N
-        jLabel8.setForeground(new java.awt.Color(255, 255, 102));
+        jLabel8.setForeground(new java.awt.Color(255, 255, 255));
         jLabel8.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         jLabel8.setText("Username");
         jPanel1.add(jLabel8, new org.netbeans.lib.awtextra.AbsoluteConstraints(260, 130, 190, 90));
@@ -157,15 +173,15 @@ public class loginForm extends javax.swing.JFrame {
         jLabel10.setText("Dont have an Account?");
         jPanel1.add(jLabel10, new org.netbeans.lib.awtextra.AbsoluteConstraints(410, 300, 140, -1));
 
-        user.setBorder(javax.swing.BorderFactory.createBevelBorder(javax.swing.border.BevelBorder.RAISED));
-        user.addActionListener(new java.awt.event.ActionListener() {
+        u_user.setBorder(javax.swing.BorderFactory.createBevelBorder(javax.swing.border.BevelBorder.RAISED));
+        u_user.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                userActionPerformed(evt);
+                u_userActionPerformed(evt);
             }
         });
-        jPanel1.add(user, new org.netbeans.lib.awtextra.AbsoluteConstraints(310, 190, 210, 30));
+        jPanel1.add(u_user, new org.netbeans.lib.awtextra.AbsoluteConstraints(310, 190, 210, 30));
 
-        jLabel11.setIcon(new javax.swing.ImageIcon(getClass().getResource("/images/download__1_-removebg-preview.png"))); // NOI18N
+        jLabel11.setIcon(new javax.swing.ImageIcon(getClass().getResource("/images/download-removebg-preview.png"))); // NOI18N
         jLabel11.setCursor(new java.awt.Cursor(java.awt.Cursor.DEFAULT_CURSOR));
         jLabel11.setDoubleBuffered(true);
         jPanel1.add(jLabel11, new org.netbeans.lib.awtextra.AbsoluteConstraints(160, 50, 480, 450));
@@ -184,19 +200,37 @@ public class loginForm extends javax.swing.JFrame {
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
-    private void passActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_passActionPerformed
+    private void u_passActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_u_passActionPerformed
         // TODO add your handling code here:
-    }//GEN-LAST:event_passActionPerformed
+    }//GEN-LAST:event_u_passActionPerformed
 
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
     
-    if (loginAcc(user.getText(), pass.getText())) { // Fix the username parameter
+        String username = u_user.getText().trim();  // Get username from input field
+    String password = u_pass.getText().trim();  // Get password from input field
+
+    System.out.println("Entered Username: " + username);
+    System.out.println("Entered Password: " + password);
+
+    String role = loginAcc(username, password); // Call login function
+    
+    if (role != null) { 
         JOptionPane.showMessageDialog(null, "Login Successfully");
-        adminDashboard ads = new adminDashboard();
-        ads.setVisible(true);
-        this.dispose();
+
+        if (role.equalsIgnoreCase("Admin")) { // Case-insensitive check
+            adminDashboard ads = new adminDashboard();
+            ads.setVisible(true);
+        } else if (role.equalsIgnoreCase("Employee")) {
+            employeeDashBoard eds = new employeeDashBoard();
+            eds.setVisible(true);
+        } else {
+            JOptionPane.showMessageDialog(null, "Unknown Role!");
+            return;
+        }
+
+        this.dispose(); // Close current login form
     } else {
-        JOptionPane.showMessageDialog(null, "Login Failed");
+        JOptionPane.showMessageDialog(null, "Login Failed. Invalid Username or Password.");
     }      
 
     }//GEN-LAST:event_jButton1ActionPerformed
@@ -207,9 +241,9 @@ public class loginForm extends javax.swing.JFrame {
     this.dispose(); // Close the current login form
     }//GEN-LAST:event_jLabel9MouseClicked
 
-    private void userActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_userActionPerformed
+    private void u_userActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_u_userActionPerformed
         // TODO add your handling code here:
-    }//GEN-LAST:event_userActionPerformed
+    }//GEN-LAST:event_u_userActionPerformed
 
     /**
      * @param args the command line arguments
@@ -261,7 +295,7 @@ public class loginForm extends javax.swing.JFrame {
     private javax.swing.JLabel jLabel9;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel2;
-    private javax.swing.JTextField pass;
-    private javax.swing.JTextField user;
+    private javax.swing.JTextField u_pass;
+    private javax.swing.JTextField u_user;
     // End of variables declaration//GEN-END:variables
 }
