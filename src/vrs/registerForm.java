@@ -45,15 +45,15 @@ public class registerForm extends javax.swing.JFrame {
         jLabel7 = new javax.swing.JLabel();
         jLabel8 = new javax.swing.JLabel();
         register = new javax.swing.JButton();
-        c_pass = new javax.swing.JTextField();
         jLabel9 = new javax.swing.JLabel();
         jLabel10 = new javax.swing.JLabel();
         u_user = new javax.swing.JTextField();
-        u_pass = new javax.swing.JTextField();
         b_page = new javax.swing.JButton();
         u_role = new javax.swing.JComboBox<>();
         jLabel11 = new javax.swing.JLabel();
         u_name = new javax.swing.JTextField();
+        c_pass = new javax.swing.JPasswordField();
+        u_pass = new javax.swing.JPasswordField();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -129,14 +129,6 @@ public class registerForm extends javax.swing.JFrame {
         });
         jPanel1.add(register, new org.netbeans.lib.awtextra.AbsoluteConstraints(290, 420, 90, 30));
 
-        c_pass.setBorder(javax.swing.BorderFactory.createBevelBorder(javax.swing.border.BevelBorder.RAISED));
-        c_pass.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                c_passActionPerformed(evt);
-            }
-        });
-        jPanel1.add(c_pass, new org.netbeans.lib.awtextra.AbsoluteConstraints(290, 380, 210, 30));
-
         jLabel9.setFont(new java.awt.Font("Tahoma", 3, 12)); // NOI18N
         jLabel9.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         jLabel9.setText("Password");
@@ -154,14 +146,6 @@ public class registerForm extends javax.swing.JFrame {
             }
         });
         jPanel1.add(u_user, new org.netbeans.lib.awtextra.AbsoluteConstraints(290, 180, 210, 30));
-
-        u_pass.setBorder(javax.swing.BorderFactory.createBevelBorder(javax.swing.border.BevelBorder.RAISED));
-        u_pass.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                u_passActionPerformed(evt);
-            }
-        });
-        jPanel1.add(u_pass, new org.netbeans.lib.awtextra.AbsoluteConstraints(290, 310, 210, 30));
 
         b_page.setBackground(new java.awt.Color(255, 153, 153));
         b_page.setFont(new java.awt.Font("Tahoma", 1, 12)); // NOI18N
@@ -194,6 +178,20 @@ public class registerForm extends javax.swing.JFrame {
             }
         });
         jPanel1.add(u_name, new org.netbeans.lib.awtextra.AbsoluteConstraints(290, 120, 210, 30));
+
+        c_pass.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                c_passActionPerformed(evt);
+            }
+        });
+        jPanel1.add(c_pass, new org.netbeans.lib.awtextra.AbsoluteConstraints(290, 380, 210, 30));
+
+        u_pass.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                u_passActionPerformed(evt);
+            }
+        });
+        jPanel1.add(u_pass, new org.netbeans.lib.awtextra.AbsoluteConstraints(290, 310, 210, 30));
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
@@ -270,17 +268,9 @@ public class registerForm extends javax.swing.JFrame {
 
     }//GEN-LAST:event_registerActionPerformed
 
-    private void c_passActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_c_passActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_c_passActionPerformed
-
     private void u_userActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_u_userActionPerformed
         // TODO add your handling code here:
     }//GEN-LAST:event_u_userActionPerformed
-
-    private void u_passActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_u_passActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_u_passActionPerformed
 
     private void b_pageActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_b_pageActionPerformed
        loginForm log = new loginForm();
@@ -300,6 +290,25 @@ add(roleComboBox);
     private void u_nameActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_u_nameActionPerformed
         // TODO add your handling code here:
     }//GEN-LAST:event_u_nameActionPerformed
+
+    private void u_passActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_u_passActionPerformed
+                                      
+    char[] password = u_pass.getPassword(); 
+    
+ 
+    String passwordString = new String(password);
+    System.out.println("Password entered: " + passwordString);
+
+    }//GEN-LAST:event_u_passActionPerformed
+
+    private void c_passActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_c_passActionPerformed
+       
+    char[] password = u_pass.getPassword(); 
+    
+    
+    String passwordString = new String(password);
+    System.out.println("Password entered: " + passwordString);
+    }//GEN-LAST:event_c_passActionPerformed
 
     /**
      * @param args the command line arguments
@@ -338,7 +347,7 @@ add(roleComboBox);
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton b_page;
-    private javax.swing.JTextField c_pass;
+    private javax.swing.JPasswordField c_pass;
     private javax.swing.JLabel car;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel10;
@@ -355,7 +364,7 @@ add(roleComboBox);
     private javax.swing.JButton register;
     private javax.swing.JTextField u_email;
     private javax.swing.JTextField u_name;
-    private javax.swing.JTextField u_pass;
+    private javax.swing.JPasswordField u_pass;
     private javax.swing.JComboBox<String> u_role;
     private javax.swing.JTextField u_user;
     // End of variables declaration//GEN-END:variables

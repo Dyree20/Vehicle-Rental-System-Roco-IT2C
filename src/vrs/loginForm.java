@@ -75,13 +75,13 @@ public class loginForm extends javax.swing.JFrame {
         jLabel1 = new javax.swing.JLabel();
         jLabel5 = new javax.swing.JLabel();
         jLabel6 = new javax.swing.JLabel();
-        u_pass = new javax.swing.JTextField();
         jLabel7 = new javax.swing.JLabel();
         jLabel8 = new javax.swing.JLabel();
         jButton1 = new javax.swing.JButton();
         jLabel9 = new javax.swing.JLabel();
         jLabel10 = new javax.swing.JLabel();
         u_user = new javax.swing.JTextField();
+        u_pass = new javax.swing.JPasswordField();
         jLabel11 = new javax.swing.JLabel();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
@@ -131,14 +131,6 @@ public class loginForm extends javax.swing.JFrame {
         jLabel6.setText("Password");
         jPanel1.add(jLabel6, new org.netbeans.lib.awtextra.AbsoluteConstraints(260, 200, 190, 90));
 
-        u_pass.setBorder(javax.swing.BorderFactory.createBevelBorder(javax.swing.border.BevelBorder.RAISED));
-        u_pass.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                u_passActionPerformed(evt);
-            }
-        });
-        jPanel1.add(u_pass, new org.netbeans.lib.awtextra.AbsoluteConstraints(310, 260, 210, 30));
-
         jLabel7.setFont(new java.awt.Font("Tahoma", 3, 18)); // NOI18N
         jLabel7.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         jLabel7.setText("LOG IN");
@@ -181,6 +173,13 @@ public class loginForm extends javax.swing.JFrame {
         });
         jPanel1.add(u_user, new org.netbeans.lib.awtextra.AbsoluteConstraints(310, 190, 210, 30));
 
+        u_pass.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                u_passActionPerformed(evt);
+            }
+        });
+        jPanel1.add(u_pass, new org.netbeans.lib.awtextra.AbsoluteConstraints(310, 260, 210, 30));
+
         jLabel11.setIcon(new javax.swing.ImageIcon(getClass().getResource("/images/download-removebg-preview.png"))); // NOI18N
         jLabel11.setCursor(new java.awt.Cursor(java.awt.Cursor.DEFAULT_CURSOR));
         jLabel11.setDoubleBuffered(true);
@@ -198,11 +197,8 @@ public class loginForm extends javax.swing.JFrame {
         );
 
         pack();
+        setLocationRelativeTo(null);
     }// </editor-fold>//GEN-END:initComponents
-
-    private void u_passActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_u_passActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_u_passActionPerformed
 
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
     
@@ -244,6 +240,15 @@ public class loginForm extends javax.swing.JFrame {
     private void u_userActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_u_userActionPerformed
         // TODO add your handling code here:
     }//GEN-LAST:event_u_userActionPerformed
+
+    private void u_passActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_u_passActionPerformed
+        // Assuming u_pass is a JPasswordField
+    char[] password = u_pass.getPassword(); // Get the password entered
+    
+    // Do something with the password (e.g., authentication)
+    String passwordString = new String(password);
+    System.out.println("Password entered: " + passwordString);
+    }//GEN-LAST:event_u_passActionPerformed
 
     /**
      * @param args the command line arguments
@@ -295,7 +300,7 @@ public class loginForm extends javax.swing.JFrame {
     private javax.swing.JLabel jLabel9;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel2;
-    private javax.swing.JTextField u_pass;
+    private javax.swing.JPasswordField u_pass;
     private javax.swing.JTextField u_user;
     // End of variables declaration//GEN-END:variables
 }
