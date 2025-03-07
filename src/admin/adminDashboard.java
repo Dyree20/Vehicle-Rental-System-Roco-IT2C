@@ -5,7 +5,9 @@
  */
 package admin;
 
+import vrs.Approval;
 import vrs.home;
+import vrs.loginForm;
 
 /**
  *
@@ -33,11 +35,12 @@ public class adminDashboard extends javax.swing.JFrame {
         jPanel1 = new javax.swing.JPanel();
         jPanel3 = new javax.swing.JPanel();
         jLabel1 = new javax.swing.JLabel();
+        logout = new javax.swing.JButton();
         jLabel2 = new javax.swing.JLabel();
         jPanel2 = new javax.swing.JPanel();
         add_vehicles = new javax.swing.JButton();
         dashboard = new javax.swing.JButton();
-        jButton1 = new javax.swing.JButton();
+        p_approval = new javax.swing.JButton();
         mhome = new javax.swing.JDesktopPane();
 
         jMenu1.setText("jMenu1");
@@ -53,6 +56,19 @@ public class adminDashboard extends javax.swing.JFrame {
         jLabel1.setFont(new java.awt.Font("Tahoma", 3, 36)); // NOI18N
         jLabel1.setText("ADMIN PANEL");
         jPanel3.add(jLabel1, new org.netbeans.lib.awtextra.AbsoluteConstraints(150, 0, 504, 85));
+
+        logout.setText("LOGOUT");
+        logout.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                logoutMouseClicked(evt);
+            }
+        });
+        logout.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                logoutActionPerformed(evt);
+            }
+        });
+        jPanel3.add(logout, new org.netbeans.lib.awtextra.AbsoluteConstraints(960, 10, 120, 40));
 
         jPanel1.add(jPanel3, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 0, 1090, -1));
 
@@ -83,8 +99,18 @@ public class adminDashboard extends javax.swing.JFrame {
             }
         });
 
-        jButton1.setFont(new java.awt.Font("Microsoft YaHei", 3, 12)); // NOI18N
-        jButton1.setText("APPROVAL");
+        p_approval.setFont(new java.awt.Font("Microsoft YaHei", 3, 12)); // NOI18N
+        p_approval.setText("APPROVAL");
+        p_approval.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                p_approvalMouseClicked(evt);
+            }
+        });
+        p_approval.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                p_approvalActionPerformed(evt);
+            }
+        });
 
         javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
         jPanel2.setLayout(jPanel2Layout);
@@ -95,7 +121,7 @@ public class adminDashboard extends javax.swing.JFrame {
                 .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(dashboard, javax.swing.GroupLayout.PREFERRED_SIZE, 130, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(add_vehicles, javax.swing.GroupLayout.PREFERRED_SIZE, 130, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jButton1, javax.swing.GroupLayout.PREFERRED_SIZE, 130, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                    .addComponent(p_approval, javax.swing.GroupLayout.PREFERRED_SIZE, 130, javax.swing.GroupLayout.PREFERRED_SIZE)))
         );
         jPanel2Layout.setVerticalGroup(
             jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -105,7 +131,7 @@ public class adminDashboard extends javax.swing.JFrame {
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addComponent(add_vehicles, javax.swing.GroupLayout.PREFERRED_SIZE, 47, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addComponent(jButton1, javax.swing.GroupLayout.PREFERRED_SIZE, 46, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(p_approval, javax.swing.GroupLayout.PREFERRED_SIZE, 46, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap())
         );
 
@@ -157,6 +183,34 @@ public class adminDashboard extends javax.swing.JFrame {
         // TODO add your handling code here:
     }//GEN-LAST:event_dashboardMouseEntered
 
+    private void p_approvalMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_p_approvalMouseClicked
+        
+    }//GEN-LAST:event_p_approvalMouseClicked
+
+    private void p_approvalActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_p_approvalActionPerformed
+        for (java.awt.Component comp : mhome.getComponents()) {
+        if (comp instanceof Approval) {
+            comp.setVisible(true);
+            return; // Exit method if it's already open
+        }
+    }
+        
+        
+        Approval u_app = new Approval();
+        
+       mhome.add(u_app).setVisible(true);
+    }//GEN-LAST:event_p_approvalActionPerformed
+
+    private void logoutMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_logoutMouseClicked
+        loginForm log = new loginForm();
+        log.setVisible(true);
+        this.dispose();
+    }//GEN-LAST:event_logoutMouseClicked
+
+    private void logoutActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_logoutActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_logoutActionPerformed
+
     /**
      * @param args the command line arguments
      */
@@ -195,13 +249,14 @@ public class adminDashboard extends javax.swing.JFrame {
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton add_vehicles;
     private javax.swing.JButton dashboard;
-    private javax.swing.JButton jButton1;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JMenu jMenu1;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel2;
     private javax.swing.JPanel jPanel3;
+    private javax.swing.JButton logout;
     private javax.swing.JDesktopPane mhome;
+    private javax.swing.JButton p_approval;
     // End of variables declaration//GEN-END:variables
 }

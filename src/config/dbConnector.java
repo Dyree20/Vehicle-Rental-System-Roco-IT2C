@@ -1,42 +1,43 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package config;
-
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-
-/**
- *
- * @author ROCO
- */
-
-
+import java.sql.*;
 
 public class dbConnector {
-    private Connection connect;
+    private static final String URL = "jdbc:mysql://localhost:3306/vrs";
+    private static final String USER = "root";
+    private static final String PASSWORD = "";
 
-       // constructor to connect to our database
-        public dbConnector(){
-            try{
-                connect = DriverManager.getConnection("jdbc:mysql://localhost:3306/vrs", "root", "");
-            }catch(SQLException ex){
-                    System.out.println("Can't connect to database: "+ex.getMessage());
+    // Method to get a new database connection
+    public Connection getConnection() throws SQLException {
+        return DriverManager.getConnection(URL, USER, PASSWORD);
+    }
+
+    // Method for SELECT queries
+    public ResultSet getData(String query) {
+        try {
+            Connection conn = getConnection();  // Get a new connection
+            Statement stmt = conn.createStatement();
+            return stmt.executeQuery(query);  // Return ResultSet (must be closed by the caller)
+        } catch (SQLException e) {
+            System.out.println("SQL Error: " + e.getMessage());
+            return null;
+        }
+    }
+
+    // Method for UPDATE, DELETE, INSERT queries
+    public boolean updateData(String query, String... params) {
+        try (Connection conn = getConnection();
+             PreparedStatement pst = conn.prepareStatement(query)) {
+            
+            for (int i = 0; i < params.length; i++) {
+                pst.setString(i + 1, params[i]);
             }
+
+            int rowsAffected = pst.executeUpdate();
+            return rowsAffected > 0; // Returns true if at least one row is updated
+
+        } catch (SQLException ex) {
+            System.out.println("SQL Error: " + ex.getMessage());
+            return false;
         }
-        
-        //Function to retrieve data
-        public ResultSet getData(String sql) throws SQLException{
-            Statement stmt = connect.createStatement();
-            ResultSet rst = stmt.executeQuery(sql);
-            return rst;
-        }
-        
-        
+    }
 }
-   

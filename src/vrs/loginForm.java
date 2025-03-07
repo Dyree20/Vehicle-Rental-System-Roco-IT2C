@@ -6,6 +6,8 @@
 package vrs;
 import admin.adminDashboard;
 import employeeDashboard.employeeDashBoard;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -26,34 +28,54 @@ public class loginForm extends javax.swing.JFrame {
         initComponents();
     }
         
-  public String loginAcc(String username, String password) {
+ public String loginAcc(String username, String password) {
     String role = null; // Default to null (login failed)
 
     try {
         Connection con = DriverManager.getConnection("jdbc:mysql://localhost:3306/vrs", "root", "");
-        String sql = "SELECT u_role FROM tbl_users WHERE LOWER(u_username) = LOWER(?) AND u_password = ?";
+        String sql = "SELECT u_role, u_password FROM tbl_users WHERE LOWER(u_username) = LOWER(?)";
         PreparedStatement pst = con.prepareStatement(sql);
         pst.setString(1, username);
-        pst.setString(2, password);
-        
-        System.out.println("Executing Query: " + pst.toString()); // Debugging SQL query
         
         ResultSet rs = pst.executeQuery();
         
         if (rs.next()) {
-            role = rs.getString("u_role"); // Get user role
-            System.out.println("Login Success - Role: " + role);
+            String storedHash = rs.getString("u_password"); // Get stored hash
+            if (checkPassword(password, storedHash)) { // Validate password
+                role = rs.getString("u_role"); // Get user role
+                System.out.println("Login Success - Role: " + role);
+            } else {
+                System.out.println("Login Failed - Incorrect password.");
+            }
         } else {
             System.out.println("Login Failed - No matching user found.");
         }
         
+        con.close(); // Close connection
     } catch (SQLException e) {
-        e.printStackTrace(); // Print SQL error if any
+        e.printStackTrace();
     }
     
     return role; // Return role or null if login failed
 }
 
+public boolean checkPassword(String enteredPassword, String storedHash) {
+    try {
+        MessageDigest md = MessageDigest.getInstance("SHA-256");
+        md.update(enteredPassword.getBytes());
+        byte[] hashBytes = md.digest();
+        
+        StringBuilder hexString = new StringBuilder();
+        for (byte b : hashBytes) {
+            hexString.append(String.format("%02x", b));
+        }
+        
+        return hexString.toString().equals(storedHash);
+    } catch (NoSuchAlgorithmException e) {
+        e.printStackTrace();
+        return false;
+    }
+}
 
 
 
