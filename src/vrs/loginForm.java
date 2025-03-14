@@ -15,71 +15,102 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import javax.swing.JOptionPane;
 
-/**
- *
- * @author ROCO
- */
 public class loginForm extends javax.swing.JFrame {
 
-    /**
-     * Creates new form loginForm
-     */
     public loginForm() {
         initComponents();
     }
-        
- public String loginAcc(String username, String password) {
-    String role = null; // Default to null (login failed)
+
+    public String loginAcc(String username, String password) {
+    String role = null;
 
     try {
-        Connection con = DriverManager.getConnection("jdbc:mysql://localhost:3306/vrs", "root", "");
-        String sql = "SELECT u_role, u_password FROM tbl_users WHERE LOWER(u_username) = LOWER(?)";
+        Connection con = DriverManager.getConnection("jdbc:mysql://localhost:3306/vrs", "root", ""); 
+        String sql = "SELECT u_id, u_role, u_password, u_status FROM tbl_approval WHERE LOWER(u_username) = LOWER(?)";
         PreparedStatement pst = con.prepareStatement(sql);
         pst.setString(1, username);
-        
+
         ResultSet rs = pst.executeQuery();
-        
+
         if (rs.next()) {
-            String storedHash = rs.getString("u_password"); // Get stored hash
-            if (checkPassword(password, storedHash)) { // Validate password
-                role = rs.getString("u_role"); // Get user role
+            int userId = rs.getInt("u_id");  
+            String storedPassword = rs.getString("u_password"); 
+            String status = rs.getString("u_status"); 
+
+            if (status.equalsIgnoreCase("Pending")) {
+                JOptionPane.showMessageDialog(null, "Your account is pending approval. Please wait for admin approval.");
+                return null;
+            }
+
+            // Hash and compare passwords securely
+            if (checkPassword(password, storedPassword)) {
+                role = rs.getString("u_role"); 
                 System.out.println("Login Success - Role: " + role);
-            } else {
+            } else { 
                 System.out.println("Login Failed - Incorrect password.");
             }
         } else {
             System.out.println("Login Failed - No matching user found.");
         }
-        
-        con.close(); // Close connection
+
+        con.close();
+    } catch (SQLException e) {
+        JOptionPane.showMessageDialog(null, "Database error: " + e.getMessage());
+    }
+
+    return role;
+}
+
+
+
+// Method to insert into tbl_approval
+private void insertIntoApproval(Connection con, int userId) {
+    try {
+        String checkSql = "SELECT COUNT(*) FROM tbl_approval WHERE u_id = ?";
+        PreparedStatement checkPst = con.prepareStatement(checkSql);
+        checkPst.setInt(1, userId);
+        ResultSet checkRs = checkPst.executeQuery();
+
+        if (checkRs.next() && checkRs.getInt(1) == 0) { // Check if user is NOT in tbl_approval
+            String insertSql = "INSERT INTO tbl_approval (u_id, status) VALUES (?, 'Pending')";
+            PreparedStatement insertPst = con.prepareStatement(insertSql);
+            insertPst.setInt(1, userId);
+            insertPst.executeUpdate();
+
+            System.out.println("Inserted into tbl_approval for user ID: " + userId);
+            
+            insertPst.close(); // Close PreparedStatement
+        }
+
+        checkRs.close(); // Close ResultSet
+        checkPst.close(); // Close PreparedStatement
+
     } catch (SQLException e) {
         e.printStackTrace();
     }
-    
-    return role; // Return role or null if login failed
 }
 
-public boolean checkPassword(String enteredPassword, String storedHash) {
+    
+public boolean checkPassword(String inputPassword, String storedPassword) {
+    return hashPassword(inputPassword).equals(storedPassword);
+}
+
+public String hashPassword(String password) {
     try {
         MessageDigest md = MessageDigest.getInstance("SHA-256");
-        md.update(enteredPassword.getBytes());
-        byte[] hashBytes = md.digest();
-        
+        byte[] hash = md.digest(password.getBytes());
         StringBuilder hexString = new StringBuilder();
-        for (byte b : hashBytes) {
+        for (byte b : hash) {
             hexString.append(String.format("%02x", b));
         }
-        
-        return hexString.toString().equals(storedHash);
+        return hexString.toString();
     } catch (NoSuchAlgorithmException e) {
         e.printStackTrace();
-        return false;
+        return null;
     }
-}
+} 
 
-
-
-    
+   
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -224,39 +255,36 @@ public boolean checkPassword(String enteredPassword, String storedHash) {
 
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
     
-        String username = u_user.getText().trim();  // Get username from input field
-    String password = u_pass.getText().trim();  // Get password from input field
+         String username = u_user.getText().trim();  
+        String password = new String(u_pass.getPassword()).trim();  
 
-    System.out.println("Entered Username: " + username);
-    System.out.println("Entered Password: " + password);
+        String role = loginAcc(username, password); // Call login function
+        
+        if (role != null) { 
+            JOptionPane.showMessageDialog(null, "Login Successfully");
 
-    String role = loginAcc(username, password); // Call login function
-    
-    if (role != null) { 
-        JOptionPane.showMessageDialog(null, "Login Successfully");
+            if (role.equalsIgnoreCase("Admin")) { 
+                new adminDashboard().setVisible(true);
+            } else if (role.equalsIgnoreCase("Employee")) {
+                new employeeDashBoard().setVisible(true);
+            } else {
+                JOptionPane.showMessageDialog(null, "Unknown Role!");
+                return;
+            }
 
-        if (role.equalsIgnoreCase("Admin")) { // Case-insensitive check
-            adminDashboard ads = new adminDashboard();
-            ads.setVisible(true);
-        } else if (role.equalsIgnoreCase("Employee")) {
-            employeeDashBoard eds = new employeeDashBoard();
-            eds.setVisible(true);
+            this.dispose(); // Close current login form
         } else {
-            JOptionPane.showMessageDialog(null, "Unknown Role!");
-            return;
-        }
-
-        this.dispose(); // Close current login form
-    } else {
-        JOptionPane.showMessageDialog(null, "Login Failed. Invalid Username or Password.");
-    }      
+            JOptionPane.showMessageDialog(null, "Login Failed. Invalid Username or Password.");
+        }      
+   
 
     }//GEN-LAST:event_jButton1ActionPerformed
 
     private void jLabel9MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jLabel9MouseClicked
-         registerForm reg = new registerForm(); // Create an instance of registerForm
-    reg.setVisible(true); // Show the registration form
-    this.dispose(); // Close the current login form
+       new registerForm().setVisible(true);
+        this.dispose();
+    
+
     }//GEN-LAST:event_jLabel9MouseClicked
 
     private void u_userActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_u_userActionPerformed
