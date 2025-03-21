@@ -188,23 +188,26 @@ public class adminDashboard extends javax.swing.JFrame {
     }//GEN-LAST:event_p_approvalMouseClicked
 
     private void p_approvalActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_p_approvalActionPerformed
-        for (java.awt.Component comp : mhome.getComponents()) {
+            for (java.awt.Component comp : mhome.getComponents()) {
         if (comp instanceof Approval) {
             comp.setVisible(true);
+            ((Approval) comp).toFront();
             return; // Exit method if it's already open
         }
     }
-        
-        
-        Approval u_app = new Approval();
-        
-       mhome.add(u_app).setVisible(true);
+
+    Approval u_app = new Approval();
+    mhome.add(u_app);
+    u_app.setVisible(true);
+
+
     }//GEN-LAST:event_p_approvalActionPerformed
 
     private void logoutMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_logoutMouseClicked
-        loginForm log = new loginForm();
-        log.setVisible(true);
-        this.dispose();
+    this.dispose();
+    loginForm log = new loginForm();
+    log.setVisible(true);
+    log.setLocationRelativeTo(null);
     }//GEN-LAST:event_logoutMouseClicked
 
     private void logoutActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_logoutActionPerformed

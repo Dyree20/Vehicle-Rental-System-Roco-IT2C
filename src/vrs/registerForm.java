@@ -234,70 +234,91 @@ public class registerForm extends javax.swing.JFrame {
     }//GEN-LAST:event_u_emailActionPerformed
 
     private void registerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_registerActionPerformed
-   String url = "jdbc:mysql://localhost:3306/vrs";
-        String user = "root";
-        String dbPassword = "";
+                                        
+    String url = "jdbc:mysql://localhost:3306/vrs";
+    String user = "root";
+    String dbPassword = "";
 
-        String fullName = u_name.getText().trim();
-        String username = u_user.getText().trim();
-        String email = u_email.getText().trim();
-        String password = new String(u_pass.getPassword()).trim();
-        String confirmPassword = new String(c_pass.getPassword()).trim();
-        String phone = u_phone.getText().trim();
-        String role = (String) u_role.getSelectedItem();
+    String fullName = u_name.getText().trim();
+    String username = u_user.getText().trim();
+    String email = u_email.getText().trim();
+    String password = new String(u_pass.getPassword()).trim();
+    String confirmPassword = new String(c_pass.getPassword()).trim();
+    String phone = u_phone.getText().trim();
+    String role = (String) u_role.getSelectedItem();
 
-        // Basic validations
-        if (fullName.isEmpty() || username.isEmpty() || email.isEmpty() ||
-            password.isEmpty() || confirmPassword.isEmpty() || phone.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "All fields are required!", "Error", JOptionPane.ERROR_MESSAGE);
-            return;
-        }
-        if (!isValidEmail(email)) {
-            JOptionPane.showMessageDialog(this, "Invalid Email format!", "Error", JOptionPane.ERROR_MESSAGE);
-            return;
-        }
-        if (!isValidPassword(password) || !password.equals(confirmPassword)) {
-            JOptionPane.showMessageDialog(this, "Password must be at least 8 characters and match confirm password!", "Error", JOptionPane.ERROR_MESSAGE);
-            return;
-        }
-        if (!phone.matches("\\d{10,15}")) {
-            JOptionPane.showMessageDialog(this, "Invalid Phone Number! It must be 10-15 digits.", "Error", JOptionPane.ERROR_MESSAGE);
-            return;
-        }
+    System.out.println("Register button clicked!");
 
-        String hashedPassword = hashPassword(password);
+    // Basic validations
+    if (fullName.isEmpty() || username.isEmpty() || email.isEmpty() ||
+        password.isEmpty() || confirmPassword.isEmpty() || phone.isEmpty()) {
+        JOptionPane.showMessageDialog(this, "All fields are required!", "Error", JOptionPane.ERROR_MESSAGE);
+        System.out.println("Validation failed: Empty fields");
+        return;
+    }
+    if (!isValidEmail(email)) {
+        JOptionPane.showMessageDialog(this, "Invalid Email format!", "Error", JOptionPane.ERROR_MESSAGE);
+        System.out.println("Validation failed: Invalid Email");
+        return;
+    }
+    if (!isValidPassword(password) || !password.equals(confirmPassword)) {
+        JOptionPane.showMessageDialog(this, "Password must be at least 8 characters and match confirm password!", "Error", JOptionPane.ERROR_MESSAGE);
+        System.out.println("Validation failed: Password mismatch");
+        return;
+    }
+    if (!phone.matches("^[0-9-+ ]{10,15}$")) {
+    JOptionPane.showMessageDialog(this, "Invalid Phone Number! It must be 10-15 digits and may include + or -.", "Error", JOptionPane.ERROR_MESSAGE);
+    return;
+}
 
-        // Database operations
-        try (Connection conn = DriverManager.getConnection(url, user, dbPassword)) {
-            String checkQuery = "SELECT 1 FROM tbl_users WHERE u_username = ? OR u_email = ? UNION SELECT 1 FROM tbl_approval WHERE u_username = ? OR u_email = ?";
-            try (PreparedStatement checkStmt = conn.prepareStatement(checkQuery)) {
-                checkStmt.setString(1, username);
-                checkStmt.setString(2, email);
-                checkStmt.setString(3, username);
-                checkStmt.setString(4, email);
-                ResultSet rs = checkStmt.executeQuery();
-                if (rs.next()) {
-                    JOptionPane.showMessageDialog(this, "User already exists!", "Error", JOptionPane.ERROR_MESSAGE);
-                    return;
-                }
+    String hashedPassword = hashPassword(password);
+    System.out.println("Hashed Password: " + hashedPassword);
+
+    try (Connection conn = DriverManager.getConnection(url, user, dbPassword)) {
+        System.out.println("Connected to the database!");
+
+        // Check if user already exists
+        String checkQuery = "SELECT 1 FROM tbl_users WHERE u_username = ? OR u_email = ? UNION SELECT 1 FROM tbl_approval WHERE u_username = ? OR u_email = ?";
+        try (PreparedStatement checkStmt = conn.prepareStatement(checkQuery)) {
+            checkStmt.setString(1, username);
+            checkStmt.setString(2, email);
+            checkStmt.setString(3, username);
+            checkStmt.setString(4, email);
+            ResultSet rs = checkStmt.executeQuery();
+            if (rs.next()) {
+                JOptionPane.showMessageDialog(this, "User already exists!", "Error", JOptionPane.ERROR_MESSAGE);
+                System.out.println("User already exists!");
+                return;
             }
-
-            String insertQuery = "INSERT INTO tbl_approval (u_name, u_username, u_email, u_password, u_phone, u_role) VALUES (?, ?, ?, ?, ?, ?, ?)";
-            try (PreparedStatement stmt = conn.prepareStatement(insertQuery)) {
-                stmt.setString(1, fullName);
-                stmt.setString(2, username);
-                stmt.setString(3, email);
-                stmt.setString(4, hashedPassword);
-                stmt.setString(5, phone);
-                stmt.setString(6, role);
-                stmt.setString(7, "pending");
-                stmt.executeUpdate();
-                JOptionPane.showMessageDialog(this, "Registration submitted for approval!", "Success", JOptionPane.INFORMATION_MESSAGE);
-                this.dispose(); // Close the form
-            }
-        } catch (SQLException e) {
-            JOptionPane.showMessageDialog(this, "Database error: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         }
+
+        // Insert into tbl_approval for admin approval
+        String query = "INSERT INTO tbl_approval (u_name, u_username, u_email, u_password, u_phone, u_role, u_status) VALUES (?, ?, ?, ?, ?, ?, ?)";
+
+        try (PreparedStatement pst = conn.prepareStatement(query)) {
+            pst.setString(1, fullName);
+            pst.setString(2, username);
+            pst.setString(3, email);  // Added email
+            pst.setString(4, hashedPassword);
+            pst.setString(5, phone);    
+            pst.setString(6, role);
+            pst.setString(7, "Pending");// Set status to 'Pending' for approval
+
+            int rowsAffected = pst.executeUpdate();
+            if (rowsAffected > 0) {
+                JOptionPane.showMessageDialog(this, "Registration request submitted!", "Success", JOptionPane.INFORMATION_MESSAGE);
+                System.out.println("Registration successful!");
+            } else {
+                JOptionPane.showMessageDialog(this, "Registration failed!", "Error", JOptionPane.ERROR_MESSAGE);
+                System.out.println("Database insert failed!");
+            }
+        }
+
+    } catch (SQLException e) {
+        JOptionPane.showMessageDialog(this, "Database error: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        System.out.println("SQL Exception: " + e.getMessage());
+    }
+
     
 
 
@@ -354,7 +375,8 @@ add(roleComboBox);
      */
     public static void main(String args[]) {
         /* Set the Nimbus look and feel */
-        //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
+        
+//<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
         /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
          * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
          */

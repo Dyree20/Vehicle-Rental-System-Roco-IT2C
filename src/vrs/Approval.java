@@ -25,151 +25,150 @@ public class Approval extends javax.swing.JInternalFrame {
      */
     public Approval() {
         initComponents();
-         displayData();
+        displayData();
         
-        
-     this.setBorder(javax.swing.BorderFactory.createEmptyBorder(0,0,0,0));   
-     BasicInternalFrameUI bi = (BasicInternalFrameUI)this.getUI();
-     bi.setNorthPane(null);
-        
-        
-     
-     
+        this.setBorder(javax.swing.BorderFactory.createEmptyBorder(0, 0, 0, 0));
+        BasicInternalFrameUI bi = (BasicInternalFrameUI) this.getUI();
+        bi.setNorthPane(null);
     }
+private String selectedUserId = null;
+    // Load data from `tbl_approval` into the table
+    private void displayData() {
+    try {
+        dbConnector db = new dbConnector();
+        Connection conn = db.getConnection(); // Get connection
+        String query = "SELECT * FROM tbl_approval";
+        PreparedStatement stmt = conn.prepareStatement(query);
+        ResultSet rs = stmt.executeQuery();
 
-    public void displayData(){
-        
-     try{
-     
-     dbConnector db = new dbConnector();
-     ResultSet rs = db.getData("SELECT * FROM tbl_approval");
-     employ.setModel(DbUtils.resultSetToTableModel(rs));
-     rs.close();
-     
-     }catch(SQLException ex){
-     
-         System.out.println("Errors:"+ex.getMessage());
-     
-     }
-     
-       
-        
-        
-        
+        employ.setModel(DbUtils.resultSetToTableModel(rs));
+
+        // Close resources
+        rs.close();
+        stmt.close();
+        conn.close();
+    } catch (SQLException ex) {
+        JOptionPane.showMessageDialog(this, "Error loading data: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
     }
-   private void approveUser() {
-    int selectedRow = employ.getSelectedRow();
-    if (selectedRow == -1) {
-        JOptionPane.showMessageDialog(this, "Please select a user to approve.");
-        return;
-    }
+}
 
-    String username = employ.getValueAt(selectedRow, 1).toString(); // Adjust index based on your table
+    
+    
 
-    dbConnector db = new dbConnector();
-
-    try (Connection conn = db.getConnection()) { // Use the new method
-        // Retrieve user details from tbl_approval
-        String selectQuery = "SELECT * FROM tbl_approval WHERE u_username = ?";
-        PreparedStatement selectStmt = conn.prepareStatement(selectQuery);
-        selectStmt.setString(1, username);
-        ResultSet rs = selectStmt.executeQuery();
-
-        if (rs.next()) {
-            String fullName = rs.getString("u_name");
-            String email = rs.getString("u_email");
-            String pass = rs.getString("u_password");
-            String phone = rs.getString("u_phone");
-            String role = rs.getString("u_role");
-
-            // Insert into users table
-            String insertQuery = "INSERT INTO users (u_name, u_username, u_email, u_password, u_phone, u_role) VALUES (?, ?, ?, ?, ?, ?)";
-            PreparedStatement insertStmt = conn.prepareStatement(insertQuery);
-            insertStmt.setString(1, fullName);
-            insertStmt.setString(2, username);
-            insertStmt.setString(3, email);
-            insertStmt.setString(4, pass);
-            insertStmt.setString(5, phone);
-            insertStmt.setString(6, role);
-
-            int rowsInserted = insertStmt.executeUpdate();
-            if (rowsInserted > 0) {
-                // Delete from tbl_approval after successful insertion
-                String deleteQuery = "DELETE FROM tbl_approval WHERE u_username = ?";
-                PreparedStatement deleteStmt = conn.prepareStatement(deleteQuery);
-                deleteStmt.setString(1, username);
-                deleteStmt.executeUpdate();
-                deleteStmt.close();
-
-                JOptionPane.showMessageDialog(this, "User Approved and Moved to Users Section!");
-                displayData(); // Refresh the table
-            } else {
-                JOptionPane.showMessageDialog(this, "Approval Failed!", "Error", JOptionPane.ERROR_MESSAGE);
-            }
-
-            insertStmt.close();
-        } else {
-            JOptionPane.showMessageDialog(this, "User Not Found!", "Error", JOptionPane.ERROR_MESSAGE);
+    // Approve selected user
+    private void approveUser() {
+        if (selectedUserId == null) {
+            JOptionPane.showMessageDialog(this, "Please select a user to approve.", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
         }
 
-        rs.close();
-        selectStmt.close();
-    } catch (SQLException ex) {
-        ex.printStackTrace();
-        JOptionPane.showMessageDialog(this, "Database Error: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-    }
-}
+        try (Connection conn = new dbConnector().getConnection()) {
+            conn.setAutoCommit(false);
 
+            // Fetch user details
+            String selectQuery = "SELECT * FROM tbl_approval WHERE u_id = ?";
+            try (PreparedStatement selectStmt = conn.prepareStatement(selectQuery)) {
+                selectStmt.setString(1, selectedUserId);
+                try (ResultSet rs = selectStmt.executeQuery()) {
+                    if (rs.next()) {
+                        // Insert into `users`
+                        String insertQuery = "INSERT INTO tbl_users (u_name, u_username, u_email, u_password, u_phone, u_role, u_status) VALUES (?, ?, ?, ?, ?, ?, ?)";
+                        try (PreparedStatement insertStmt = conn.prepareStatement(insertQuery)) {
+                            insertStmt.setString(1, rs.getString("u_name"));
+                            insertStmt.setString(2, rs.getString("u_username"));
+                            insertStmt.setString(3, rs.getString("u_email"));
+                            insertStmt.setString(4, rs.getString("u_password"));
+                            insertStmt.setString(5, rs.getString("u_phone"));
+                            insertStmt.setString(6, rs.getString("u_role"));
+                            insertStmt.setString(7, "Active"); // Set default status
+                            int rowsInserted = insertStmt.executeUpdate();
+                            
+                            if (insertStmt.executeUpdate() > 0) {
+                                // Delete from `tbl_approval`
+                                try (PreparedStatement deleteStmt = conn.prepareStatement("DELETE FROM tbl_approval WHERE u_id = ?")) {
+                                    deleteStmt.setString(1, selectedUserId);
+                                    deleteStmt.executeUpdate();
+                                }
 
-
-
-
-
-private void editUser() {
-    int selectedRow = employ.getSelectedRow();
-    if (selectedRow == -1) {
-        JOptionPane.showMessageDialog(this, "Please select a user to edit.");
-        return;
-    }
-
-    String userId = employ.getValueAt(selectedRow, 0).toString();
-    String newEmail = JOptionPane.showInputDialog(this, "Enter new email:");
-    String newPhone = JOptionPane.showInputDialog(this, "Enter new phone:");
-
-    if (newEmail == null || newPhone == null || newEmail.isEmpty() || newPhone.isEmpty()) {
-        JOptionPane.showMessageDialog(this, "Invalid input. No changes made.");
-        return;
-    }
-
-    dbConnector db = new dbConnector();
-    db.updateData("UPDATE tbl_approval SET u_email = ?, u_phone = ? WHERE id = ?", newEmail, newPhone, userId);
-
-    JOptionPane.showMessageDialog(this, "User updated successfully.");
-    displayData(); // Refresh table
-}
-   
-
-
-private void deleteUser() {
-    int selectedRow = employ.getSelectedRow();
-    if (selectedRow == -1) {
-        JOptionPane.showMessageDialog(this, "Please select a user to delete.");
-        return;
-    }
-
-    String userId = employ.getValueAt(selectedRow, 0).toString();
-
-    int confirm = JOptionPane.showConfirmDialog(this, "Are you sure you want to delete this user?", "Confirm Delete", JOptionPane.YES_NO_OPTION);
-    if (confirm != JOptionPane.YES_OPTION) {
-        return;
+                                conn.commit();
+                                JOptionPane.showMessageDialog(this, "User approved successfully!");
+                                displayData();
+                                selectedUserId = null; // Reset selection
+                            } else {
+                                conn.rollback();
+                                JOptionPane.showMessageDialog(this, "Approval failed.", "Error", JOptionPane.ERROR_MESSAGE);
+                            }
+                        }
+                    } else {
+                        JOptionPane.showMessageDialog(this, "User not found!", "Error", JOptionPane.ERROR_MESSAGE);
+                    }
+                }
+            }
+        } catch (SQLException ex) {
+            JOptionPane.showMessageDialog(this, "Database Error: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
     }
 
-    dbConnector db = new dbConnector();
-    db.updateData("DELETE FROM tbl_approval WHERE id = ?", userId);
+    // Edit selected user
+    private void editUser() {
+        if (selectedUserId == null) {
+            JOptionPane.showMessageDialog(this, "Please select a user to edit.", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
 
-    JOptionPane.showMessageDialog(this, "User deleted successfully.");
-    displayData(); // Refresh table
-}
+        String newEmail = JOptionPane.showInputDialog(this, "Enter new email:");
+        String newPhone = JOptionPane.showInputDialog(this, "Enter new phone:");
+
+        if (newEmail == null || newEmail.trim().isEmpty() || newPhone == null || newPhone.trim().isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Invalid input. No changes made.");
+            return;
+        }
+
+        try (Connection conn = new dbConnector().getConnection();
+             PreparedStatement updateStmt = conn.prepareStatement("UPDATE tbl_approval SET u_email = ?, u_phone = ? WHERE u_id = ?")) {
+            updateStmt.setString(1, newEmail);
+            updateStmt.setString(2, newPhone);
+            updateStmt.setString(3, selectedUserId);
+
+            if (updateStmt.executeUpdate() > 0) {
+                JOptionPane.showMessageDialog(this, "User updated successfully.");
+                displayData();
+                selectedUserId = null;
+            } else {
+                JOptionPane.showMessageDialog(this, "Update failed.", "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        } catch (SQLException ex) {
+            JOptionPane.showMessageDialog(this, "Database Error: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    // Delete selected user
+    private void deleteUser() {
+        if (selectedUserId == null) {
+            JOptionPane.showMessageDialog(this, "Please select a user to delete.", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        int confirm = JOptionPane.showConfirmDialog(this, "Are you sure you want to delete this user?", "Confirm Delete", JOptionPane.YES_NO_OPTION);
+        if (confirm != JOptionPane.YES_OPTION) {
+            return;
+        }
+
+        try (Connection conn = new dbConnector().getConnection();
+             PreparedStatement deleteStmt = conn.prepareStatement("DELETE FROM tbl_approval WHERE u_id = ?")) {
+            deleteStmt.setString(1, selectedUserId);
+
+            if (deleteStmt.executeUpdate() > 0) {
+                JOptionPane.showMessageDialog(this, "User deleted successfully.");
+                displayData();
+                selectedUserId = null;
+            } else {
+                JOptionPane.showMessageDialog(this, "Failed to delete user.", "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        } catch (SQLException ex) {
+            JOptionPane.showMessageDialog(this, "Database Error: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
 
 
     
@@ -207,6 +206,11 @@ private void deleteUser() {
                 "Title 1", "Title 2", "Title 3", "Title 4"
             }
         ));
+        employ.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                employMouseClicked(evt);
+            }
+        });
         jScrollPane1.setViewportView(employ);
 
         getContentPane().add(jScrollPane1, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 0, 960, 466));
@@ -301,7 +305,7 @@ private void deleteUser() {
     }// </editor-fold>//GEN-END:initComponents
 
     private void jLabel2MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jLabel2MouseClicked
-        // TODO add your handling code here:
+          approveUser();
     }//GEN-LAST:event_jLabel2MouseClicked
 
     private void u_approveMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_u_approveMouseClicked
@@ -309,12 +313,21 @@ private void deleteUser() {
     }//GEN-LAST:event_u_approveMouseClicked
 
     private void editMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_editMouseClicked
-        editUser();
+         editUser();
     }//GEN-LAST:event_editMouseClicked
 
     private void u_deleteMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_u_deleteMouseClicked
-        deleteUser();
+       deleteUser();
     }//GEN-LAST:event_u_deleteMouseClicked
+
+    private void employMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_employMouseClicked
+     int selectedRow = employ.getSelectedRow();
+    if (selectedRow != -1) {
+        selectedUserId = employ.getValueAt(selectedRow, 0).toString(); // First column = ID
+    }
+
+    
+    }//GEN-LAST:event_employMouseClicked
 
     
 
