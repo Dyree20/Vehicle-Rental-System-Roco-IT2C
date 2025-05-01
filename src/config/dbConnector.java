@@ -12,15 +12,10 @@ public class dbConnector {
     }
 
     // Method for SELECT queries
-    public ResultSet getData(String query) {
-        try {
-            Connection conn = getConnection();  // Get a new connection
-            Statement stmt = conn.createStatement();
-            return stmt.executeQuery(query);  // Return ResultSet (must be closed by the caller)
-        } catch (SQLException e) {
-            System.out.println("SQL Error: " + e.getMessage());
-            return null;
-        }
+    public ResultSet getData(String query) throws SQLException {
+    Connection conn = getConnection();
+    Statement stmt = conn.createStatement();
+    return stmt.executeQuery(query);
     }
 
     // Method for UPDATE, DELETE, INSERT queries

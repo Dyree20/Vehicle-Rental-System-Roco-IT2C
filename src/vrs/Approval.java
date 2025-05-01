@@ -56,58 +56,60 @@ private String selectedUserId = null;
     
 
     // Approve selected user
-    private void approveUser() {
-        if (selectedUserId == null) {
-            JOptionPane.showMessageDialog(this, "Please select a user to approve.", "Error", JOptionPane.ERROR_MESSAGE);
-            return;
-        }
+private void approveUser() {
+    if (selectedUserId == null) {
+        JOptionPane.showMessageDialog(this, "Please select a user to approve.", "Error", JOptionPane.ERROR_MESSAGE);
+        return;
+    }
 
-        try (Connection conn = new dbConnector().getConnection()) {
-            conn.setAutoCommit(false);
+    try (Connection conn = new dbConnector().getConnection()) {
+        conn.setAutoCommit(false); // Start transaction
 
-            // Fetch user details
-            String selectQuery = "SELECT * FROM tbl_approval WHERE u_id = ?";
-            try (PreparedStatement selectStmt = conn.prepareStatement(selectQuery)) {
-                selectStmt.setString(1, selectedUserId);
-                try (ResultSet rs = selectStmt.executeQuery()) {
-                    if (rs.next()) {
-                        // Insert into `users`
-                        String insertQuery = "INSERT INTO tbl_users (u_name, u_username, u_email, u_password, u_phone, u_role, u_status) VALUES (?, ?, ?, ?, ?, ?, ?)";
-                        try (PreparedStatement insertStmt = conn.prepareStatement(insertQuery)) {
-                            insertStmt.setString(1, rs.getString("u_name"));
-                            insertStmt.setString(2, rs.getString("u_username"));
-                            insertStmt.setString(3, rs.getString("u_email"));
-                            insertStmt.setString(4, rs.getString("u_password"));
-                            insertStmt.setString(5, rs.getString("u_phone"));
-                            insertStmt.setString(6, rs.getString("u_role"));
-                            insertStmt.setString(7, "Active"); // Set default status
-                            int rowsInserted = insertStmt.executeUpdate();
-                            
-                            if (insertStmt.executeUpdate() > 0) {
-                                // Delete from `tbl_approval`
-                                try (PreparedStatement deleteStmt = conn.prepareStatement("DELETE FROM tbl_approval WHERE u_id = ?")) {
-                                    deleteStmt.setString(1, selectedUserId);
-                                    deleteStmt.executeUpdate();
-                                }
-
-                                conn.commit();
+        // Fetch user details
+        String selectQuery = "SELECT * FROM tbl_approval WHERE u_id = ?";
+        try (PreparedStatement selectStmt = conn.prepareStatement(selectQuery)) {
+            selectStmt.setString(1, selectedUserId);
+            try (ResultSet rs = selectStmt.executeQuery()) {
+                if (rs.next()) {
+                    // Insert into `tbl_users`
+                    String insertQuery = "INSERT INTO tbl_users (u_name, u_username, u_email, u_password, u_phone, u_role, u_status) VALUES (?, ?, ?, ?, ?, ?, ?)";
+                    try (PreparedStatement insertStmt = conn.prepareStatement(insertQuery)) {
+                        insertStmt.setString(1, rs.getString("u_name"));
+                        insertStmt.setString(2, rs.getString("u_username"));
+                        insertStmt.setString(3, rs.getString("u_email"));
+                        insertStmt.setString(4, rs.getString("u_password"));
+                        insertStmt.setString(5, rs.getString("u_phone"));
+                        insertStmt.setString(6, rs.getString("u_role"));
+                        insertStmt.setString(7, "Active"); // Set status to Active
+                        
+                        int rowsInserted = insertStmt.executeUpdate();
+                        
+                        if (rowsInserted > 0) {
+                            // Delete from `tbl_approval` after successful insert
+                            String deleteQuery = "DELETE FROM tbl_approval WHERE u_id = ?";
+                            try (PreparedStatement deleteStmt = conn.prepareStatement(deleteQuery)) {
+                                deleteStmt.setString(1, selectedUserId);
+                                deleteStmt.executeUpdate();
+                                
+                                conn.commit(); // Commit transaction
                                 JOptionPane.showMessageDialog(this, "User approved successfully!");
-                                displayData();
+                                displayData(); // Refresh the table
                                 selectedUserId = null; // Reset selection
-                            } else {
-                                conn.rollback();
-                                JOptionPane.showMessageDialog(this, "Approval failed.", "Error", JOptionPane.ERROR_MESSAGE);
                             }
+                        } else {
+                            conn.rollback(); // Rollback if insert failed
+                            JOptionPane.showMessageDialog(this, "Failed to approve user.", "Error", JOptionPane.ERROR_MESSAGE);
                         }
-                    } else {
-                        JOptionPane.showMessageDialog(this, "User not found!", "Error", JOptionPane.ERROR_MESSAGE);
                     }
+                } else {
+                    JOptionPane.showMessageDialog(this, "User not found!", "Error", JOptionPane.ERROR_MESSAGE);
                 }
             }
-        } catch (SQLException ex) {
-            JOptionPane.showMessageDialog(this, "Database Error: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         }
+    } catch (SQLException ex) {
+        JOptionPane.showMessageDialog(this, "Database Error: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
     }
+}
 
     // Edit selected user
     private void editUser() {
@@ -323,7 +325,9 @@ private String selectedUserId = null;
     private void employMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_employMouseClicked
      int selectedRow = employ.getSelectedRow();
     if (selectedRow != -1) {
-        selectedUserId = employ.getValueAt(selectedRow, 0).toString(); // First column = ID
+        // Assuming the u_id is in the first column (index 0)
+        selectedUserId = employ.getValueAt(selectedRow, 0).toString();
+        System.out.println("Selected user ID: " + selectedUserId);
     }
 
     

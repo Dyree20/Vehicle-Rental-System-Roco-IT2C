@@ -79,7 +79,7 @@ public class adminDashboard extends javax.swing.JFrame {
         jPanel2.setBackground(new java.awt.Color(255, 51, 153));
 
         add_vehicles.setFont(new java.awt.Font("Microsoft YaHei", 3, 12)); // NOI18N
-        add_vehicles.setText("ADD VEHICLES");
+        add_vehicles.setText("VEHICLES");
         add_vehicles.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 add_vehiclesActionPerformed(evt);

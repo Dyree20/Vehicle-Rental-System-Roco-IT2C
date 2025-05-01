@@ -161,7 +161,7 @@
                 <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
                   <Font name="Microsoft YaHei" size="12" style="3"/>
                 </Property>
-                <Property name="text" type="java.lang.String" value="ADD VEHICLES"/>
+                <Property name="text" type="java.lang.String" value="VEHICLES"/>
               </Properties>
               <Events>
                 <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="add_vehiclesActionPerformed"/>

@@ -6,6 +6,7 @@
 package vrs;
 import admin.adminDashboard;
 import employeeDashboard.employeeDashBoard;
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.sql.Connection;
@@ -25,8 +26,12 @@ public class loginForm extends javax.swing.JFrame {
     }
 
     public String loginAcc(String username, String password) {
+    System.out.println("Login attempt for user: " + username);
+    System.out.println("Plain text password entered: " + password);
+    System.out.println("Hashed password calculated: " + hashPassword(password));
+    
     String sql = "SELECT u_id, u_role, u_password, u_status FROM tbl_users WHERE LOWER(u_username) = LOWER(?)";
-        
+    
     try (Connection con = DriverManager.getConnection("jdbc:mysql://localhost:3306/vrs", "root", "");
          PreparedStatement pst = con.prepareStatement(sql)) {
         
@@ -41,7 +46,10 @@ public class loginForm extends javax.swing.JFrame {
             String status = rs.getString("u_status");
 
             System.out.println("🔹 User Found: " + username);
-            System.out.println("🔹 Stored Password: " + storedPassword);
+            System.out.println("🔹 User ID: " + userId);
+            System.out.println("🔹 User Role: " + role);
+            System.out.println("🔹 Stored Password (from DB): " + storedPassword);
+            System.out.println("🔹 Password Length: " + storedPassword.length());
             System.out.println("🔹 User Status: " + status);
 
             // Check if account is pending approval
@@ -67,11 +75,86 @@ public class loginForm extends javax.swing.JFrame {
         JOptionPane.showMessageDialog(null, "Database connection error.");
     }
     return null;
+
 }
-private boolean checkPassword(String enteredPassword, String storedPassword) {
-    return enteredPassword.equals(storedPassword); // Simple comparison
+private String hashPassword(String password) {
+    try {
+        MessageDigest md = MessageDigest.getInstance("SHA-256");
+        byte[] hashBytes = md.digest(password.getBytes(StandardCharsets.UTF_8));
+        StringBuilder hexString = new StringBuilder();
+        for (byte b : hashBytes) {
+            hexString.append(String.format("%02x", b));
+        }
+        return hexString.toString();
+    } catch (NoSuchAlgorithmException e) {
+        throw new RuntimeException("Password hashing not available", e);
+    }
 }
 
+private boolean checkPassword(String enteredPassword, String storedPassword) {
+    String hashedEntered = hashPassword(enteredPassword);
+    System.out.println("Entered raw password: " + enteredPassword);
+    System.out.println("Hashed entered password: " + hashedEntered);
+    System.out.println("Stored password from DB: " + storedPassword);
+    boolean matches = hashedEntered.equals(storedPassword);
+    System.out.println("Password match: " + matches);
+    return matches;
+}
+public void updateUserPassword(String username, String plainPassword) {
+    String hashedPassword = hashPassword(plainPassword);
+    String sql = "UPDATE tbl_users SET u_password = ? WHERE u_username = ?";
+    
+    try (Connection con = DriverManager.getConnection("jdbc:mysql://localhost:3306/vrs", "root", "");
+         PreparedStatement pst = con.prepareStatement(sql)) {
+        
+        pst.setString(1, hashedPassword);
+        pst.setString(2, username);
+        
+        int result = pst.executeUpdate();
+        if (result > 0) {
+            System.out.println("Password updated successfully for " + username);
+            System.out.println("New hash: " + hashedPassword);
+        } else {
+            System.out.println("Failed to update password. User not found.");
+        }
+    } catch (SQLException e) {
+        System.out.println("Database error: " + e.getMessage());
+    }
+}
+
+
+public void updateUserPasswordToHashed(String username) {
+    try (Connection con = DriverManager.getConnection("jdbc:mysql://localhost:3306/vrs", "root", "")) {
+        // First get the current plain text password
+        String selectSql = "SELECT u_password FROM tbl_users WHERE u_username = ?";
+        try (PreparedStatement selectPst = con.prepareStatement(selectSql)) {
+            selectPst.setString(1, username);
+            ResultSet rs = selectPst.executeQuery();
+            
+            if (rs.next()) {
+                String plainPassword = rs.getString("u_password");
+                
+                // Then update it with the hashed version
+                String hashedPassword = hashPassword(plainPassword);
+                String updateSql = "UPDATE tbl_users SET u_password = ? WHERE u_username = ?";
+                
+                try (PreparedStatement updatePst = con.prepareStatement(updateSql)) {
+                    updatePst.setString(1, hashedPassword);
+                    updatePst.setString(2, username);
+                    
+                    int result = updatePst.executeUpdate();
+                    if (result > 0) {
+                        System.out.println("Password updated to hash for user: " + username);
+                    } else {
+                        System.out.println("Failed to update password hash");
+                    }
+                }
+            }
+        }
+    } catch (SQLException e) {
+        System.out.println("Database error: " + e.getMessage());
+    }
+}
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
