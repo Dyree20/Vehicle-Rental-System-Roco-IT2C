@@ -5,6 +5,7 @@
  */
 package vrs;
 import admin.adminDashboard;
+import config.dbConnector;
 import employeeDashboard.employeeDashBoard;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -20,7 +21,15 @@ public class loginForm extends javax.swing.JFrame {
 
     public loginForm() {
         initComponents();
-        
+        forgot_pass.setFont(new java.awt.Font("Tahoma", 1, 11));
+forgot_pass.setForeground(new java.awt.Color(0, 204, 204));
+forgot_pass.setText("Forgot Password?");
+forgot_pass.addMouseListener(new java.awt.event.MouseAdapter() {
+    public void mouseClicked(java.awt.event.MouseEvent evt) {
+        forgot_passMouseClicked(evt);
+    }
+    
+});
         
         
     }
@@ -154,7 +163,77 @@ public void updateUserPasswordToHashed(String username) {
     } catch (SQLException e) {
         System.out.println("Database error: " + e.getMessage());
     }
+    
+    
+    
 }
+
+// Helper methods
+private boolean userExists(String username) {
+    try {
+        Connection con = new dbConnector().getConnection();
+        PreparedStatement pst = con.prepareStatement("SELECT u_id FROM tbl_users WHERE LOWER(u_username) = LOWER(?)");
+        
+        pst.setString(1, username);
+        ResultSet rs = pst.executeQuery();
+        boolean exists = rs.next(); // Returns true if user exists
+        
+        rs.close();
+        pst.close();
+        con.close();
+        return exists;
+    } catch (SQLException e) {
+        System.out.println("Database error: " + e.getMessage());
+        return false;
+    }
+}
+private boolean submitPasswordResetRequest(String username) {
+    try {
+        System.out.println("Attempting to submit password reset request for: " + username);
+        Connection con = new dbConnector().getConnection();
+        if (con == null) {
+            System.out.println("Connection is null!");
+            return false;
+        }
+        
+        String sql = "INSERT INTO tbl_password_reset (pr_username, pr_status, pr_date) VALUES (?, 'Pending', NOW())";
+        System.out.println("SQL query: " + sql);
+        
+        PreparedStatement pst = con.prepareStatement(sql);
+        pst.setString(1, username);
+        
+        int result = pst.executeUpdate();
+        System.out.println("Insert result: " + result);
+        
+        pst.close();
+        con.close();
+        return result > 0;
+    } catch (SQLException e) {
+        System.out.println("Database error: " + e.getMessage());
+        e.printStackTrace();
+        return false;
+    }
+}
+
+
+
+private void forgot_passMouseClicked(java.awt.event.MouseEvent evt) {
+    String username = JOptionPane.showInputDialog(this, "Enter your username:", "Password Reset Request", JOptionPane.QUESTION_MESSAGE);
+    if (username != null && !username.trim().isEmpty()) {
+        // Check if user exists
+        if (userExists(username)) {
+            // Send reset request
+            if (submitPasswordResetRequest(username)) {
+                JOptionPane.showMessageDialog(this, "Password reset request submitted.\nPlease wait for admin approval.", "Request Submitted", JOptionPane.INFORMATION_MESSAGE);
+            } else {
+                JOptionPane.showMessageDialog(this, "Failed to submit request. Try again later.", "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        } else {
+            JOptionPane.showMessageDialog(this, "Username not found.", "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+}
+
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -179,6 +258,7 @@ public void updateUserPasswordToHashed(String username) {
         jLabel10 = new javax.swing.JLabel();
         u_user = new javax.swing.JTextField();
         u_pass = new javax.swing.JPasswordField();
+        forgot_pass = new javax.swing.JLabel();
         jLabel11 = new javax.swing.JLabel();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
@@ -249,18 +329,18 @@ public void updateUserPasswordToHashed(String username) {
         jPanel1.add(jButton1, new org.netbeans.lib.awtextra.AbsoluteConstraints(310, 300, 90, 30));
 
         jLabel9.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
-        jLabel9.setForeground(new java.awt.Color(51, 51, 255));
+        jLabel9.setForeground(new java.awt.Color(0, 204, 204));
         jLabel9.setText("Register");
         jLabel9.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 jLabel9MouseClicked(evt);
             }
         });
-        jPanel1.add(jLabel9, new org.netbeans.lib.awtextra.AbsoluteConstraints(440, 310, 50, 20));
+        jPanel1.add(jLabel9, new org.netbeans.lib.awtextra.AbsoluteConstraints(440, 320, 50, 20));
 
-        jLabel10.setForeground(new java.awt.Color(255, 0, 0));
+        jLabel10.setForeground(new java.awt.Color(0, 255, 204));
         jLabel10.setText("Dont have an Account?");
-        jPanel1.add(jLabel10, new org.netbeans.lib.awtextra.AbsoluteConstraints(410, 300, 140, -1));
+        jPanel1.add(jLabel10, new org.netbeans.lib.awtextra.AbsoluteConstraints(410, 310, 140, -1));
 
         u_user.setBorder(javax.swing.BorderFactory.createBevelBorder(javax.swing.border.BevelBorder.RAISED));
         u_user.addActionListener(new java.awt.event.ActionListener() {
@@ -276,6 +356,11 @@ public void updateUserPasswordToHashed(String username) {
             }
         });
         jPanel1.add(u_pass, new org.netbeans.lib.awtextra.AbsoluteConstraints(310, 260, 210, 30));
+
+        forgot_pass.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        forgot_pass.setForeground(new java.awt.Color(0, 204, 204));
+        forgot_pass.setText("Forgot Password?");
+        jPanel1.add(forgot_pass, new org.netbeans.lib.awtextra.AbsoluteConstraints(420, 290, -1, -1));
 
         jLabel11.setIcon(new javax.swing.ImageIcon(getClass().getResource("/images/download-removebg-preview.png"))); // NOI18N
         jLabel11.setCursor(new java.awt.Cursor(java.awt.Cursor.DEFAULT_CURSOR));
@@ -380,6 +465,7 @@ public void updateUserPasswordToHashed(String username) {
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JLabel forgot_pass;
     private javax.swing.JButton jButton1;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel10;

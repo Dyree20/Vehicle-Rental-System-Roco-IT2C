@@ -5,10 +5,15 @@
  */
 package admin;
 
+import java.beans.PropertyVetoException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import vrs.Approval;
+import vrs.add_vehicles;
 import vrs.home;
 import vrs.loginForm;
-
+import vrs.add_users;
+import vrs.passwordResetRequests;
 /**
  *
  * @author ROCO
@@ -20,7 +25,42 @@ public class adminDashboard extends javax.swing.JFrame {
      */
     public adminDashboard() {
         initComponents();
+        a_users.addActionListener(new java.awt.event.ActionListener() {
+    public void actionPerformed(java.awt.event.ActionEvent evt) {
+        a_usersActionPerformed(evt);
     }
+    
+    
+});
+      reset_requests.addActionListener(new java.awt.event.ActionListener() {
+    public void actionPerformed(java.awt.event.ActionEvent evt) {
+        reset_requestsActionPerformed(evt);
+    }
+});
+        
+        
+    }
+private void a_usersActionPerformed(java.awt.event.ActionEvent evt) {                                       
+    // Check if add_users frame is already open
+    for (java.awt.Component comp : mhome.getComponents()) {
+        if (comp instanceof add_users) {
+            comp.setVisible(true);
+            ((add_users) comp).toFront();
+            return; // Exit method if it's already open
+        }
+    }
+
+    // Create new add_users frame
+    add_users users = new add_users();
+    mhome.add(users);
+    users.setVisible(true);
+    try {
+        users.setSelected(true);
+    } catch (java.beans.PropertyVetoException e) {
+        e.printStackTrace();
+    }
+}
+
 
     /**
      * This method is called from within the constructor to initialize the form.
@@ -38,9 +78,11 @@ public class adminDashboard extends javax.swing.JFrame {
         logout = new javax.swing.JButton();
         jLabel2 = new javax.swing.JLabel();
         jPanel2 = new javax.swing.JPanel();
-        add_vehicles = new javax.swing.JButton();
+        vehicles_dash = new javax.swing.JButton();
         dashboard = new javax.swing.JButton();
         p_approval = new javax.swing.JButton();
+        a_users = new javax.swing.JButton();
+        reset_requests = new javax.swing.JButton();
         mhome = new javax.swing.JDesktopPane();
 
         jMenu1.setText("jMenu1");
@@ -55,7 +97,7 @@ public class adminDashboard extends javax.swing.JFrame {
 
         jLabel1.setFont(new java.awt.Font("Tahoma", 3, 36)); // NOI18N
         jLabel1.setText("ADMIN PANEL");
-        jPanel3.add(jLabel1, new org.netbeans.lib.awtextra.AbsoluteConstraints(150, 0, 504, 85));
+        jPanel3.add(jLabel1, new org.netbeans.lib.awtextra.AbsoluteConstraints(160, 0, 504, 85));
 
         logout.setText("LOGOUT");
         logout.addMouseListener(new java.awt.event.MouseAdapter() {
@@ -78,11 +120,11 @@ public class adminDashboard extends javax.swing.JFrame {
 
         jPanel2.setBackground(new java.awt.Color(255, 51, 153));
 
-        add_vehicles.setFont(new java.awt.Font("Microsoft YaHei", 3, 12)); // NOI18N
-        add_vehicles.setText("VEHICLES");
-        add_vehicles.addActionListener(new java.awt.event.ActionListener() {
+        vehicles_dash.setFont(new java.awt.Font("Microsoft YaHei", 3, 12)); // NOI18N
+        vehicles_dash.setText("VEHICLES");
+        vehicles_dash.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                add_vehiclesActionPerformed(evt);
+                vehicles_dashActionPerformed(evt);
             }
         });
 
@@ -112,16 +154,41 @@ public class adminDashboard extends javax.swing.JFrame {
             }
         });
 
+        a_users.setFont(new java.awt.Font("Microsoft YaHei", 3, 12)); // NOI18N
+        a_users.setText("USERS");
+        a_users.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                a_usersMouseClicked(evt);
+            }
+        });
+
+        reset_requests.setFont(new java.awt.Font("Microsoft YaHei", 3, 12)); // NOI18N
+        reset_requests.setText("REQUESTS");
+        reset_requests.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                reset_requestsActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
         jPanel2.setLayout(jPanel2Layout);
         jPanel2Layout.setHorizontalGroup(
             jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel2Layout.createSequentialGroup()
-                .addGap(10, 10, 10)
-                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(dashboard, javax.swing.GroupLayout.PREFERRED_SIZE, 130, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(add_vehicles, javax.swing.GroupLayout.PREFERRED_SIZE, 130, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(p_approval, javax.swing.GroupLayout.PREFERRED_SIZE, 130, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
+                    .addGroup(jPanel2Layout.createSequentialGroup()
+                        .addContainerGap()
+                        .addComponent(reset_requests, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                    .addGroup(javax.swing.GroupLayout.Alignment.LEADING, jPanel2Layout.createSequentialGroup()
+                        .addGap(10, 10, 10)
+                        .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(dashboard, javax.swing.GroupLayout.DEFAULT_SIZE, 130, Short.MAX_VALUE)
+                            .addComponent(vehicles_dash, javax.swing.GroupLayout.DEFAULT_SIZE, 130, Short.MAX_VALUE)
+                            .addComponent(p_approval, javax.swing.GroupLayout.DEFAULT_SIZE, 130, Short.MAX_VALUE)))
+                    .addGroup(javax.swing.GroupLayout.Alignment.LEADING, jPanel2Layout.createSequentialGroup()
+                        .addContainerGap()
+                        .addComponent(a_users, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         jPanel2Layout.setVerticalGroup(
             jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -129,9 +196,13 @@ public class adminDashboard extends javax.swing.JFrame {
                 .addGap(175, 175, 175)
                 .addComponent(dashboard, javax.swing.GroupLayout.PREFERRED_SIZE, 47, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addComponent(add_vehicles, javax.swing.GroupLayout.PREFERRED_SIZE, 47, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(vehicles_dash, javax.swing.GroupLayout.PREFERRED_SIZE, 47, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addComponent(p_approval, javax.swing.GroupLayout.PREFERRED_SIZE, 46, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addComponent(a_users, javax.swing.GroupLayout.PREFERRED_SIZE, 50, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addComponent(reset_requests, javax.swing.GroupLayout.PREFERRED_SIZE, 50, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap())
         );
 
@@ -169,9 +240,24 @@ public class adminDashboard extends javax.swing.JFrame {
         setLocationRelativeTo(null);
     }// </editor-fold>//GEN-END:initComponents
 
-    private void add_vehiclesActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_add_vehiclesActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_add_vehiclesActionPerformed
+    private void vehicles_dashActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_vehicles_dashActionPerformed
+        for (java.awt.Component comp : mhome.getComponents()) {
+        if (comp instanceof add_vehicles) {
+            comp.setVisible(true); // If it's already open, make it visible
+            ((add_vehicles) comp).toFront(); // Bring it to the front
+            return; // Exit method if it's already open
+        }
+    }
+        add_vehicles av = new add_vehicles();
+    mhome.add(av); // Add the internal frame to the JDesktopPane
+    av.setVisible(true); // Make the internal frame visible
+    try {
+        av.setSelected(true); // Try to bring the internal frame to the front
+    } catch (java.beans.PropertyVetoException e) {
+        e.printStackTrace();
+    }
+        
+    }//GEN-LAST:event_vehicles_dashActionPerformed
 
     private void dashboardActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_dashboardActionPerformed
         home hm = new home();
@@ -214,6 +300,26 @@ public class adminDashboard extends javax.swing.JFrame {
         // TODO add your handling code here:
     }//GEN-LAST:event_logoutActionPerformed
 
+    private void a_usersMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_a_usersMouseClicked
+        // TODO add your handling code here:
+    }//GEN-LAST:event_a_usersMouseClicked
+
+    private void reset_requestsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_reset_requestsActionPerformed
+   for (java.awt.Component comp : mhome.getComponents()) {
+        comp.setVisible(false);
+    }
+    
+    // Create new PasswordResetRequests frame
+    passwordResetRequests resetRequests = new passwordResetRequests();
+    mhome.add(resetRequests);
+    resetRequests.setVisible(true);
+        try {
+            resetRequests.setSelected(true);
+        } catch (PropertyVetoException ex) {
+            Logger.getLogger(adminDashboard.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }//GEN-LAST:event_reset_requestsActionPerformed
+
     /**
      * @param args the command line arguments
      */
@@ -250,7 +356,7 @@ public class adminDashboard extends javax.swing.JFrame {
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JButton add_vehicles;
+    private javax.swing.JButton a_users;
     private javax.swing.JButton dashboard;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
@@ -261,5 +367,7 @@ public class adminDashboard extends javax.swing.JFrame {
     private javax.swing.JButton logout;
     private javax.swing.JDesktopPane mhome;
     private javax.swing.JButton p_approval;
+    private javax.swing.JButton reset_requests;
+    private javax.swing.JButton vehicles_dash;
     // End of variables declaration//GEN-END:variables
 }
