@@ -384,27 +384,27 @@ private void forgot_passMouseClicked(java.awt.event.MouseEvent evt) {
 
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
     
-         String username = u_user.getText().trim();  
-    String password = new String(u_pass.getPassword()).trim();  
-
-    String role = loginAcc(username, password); // Call login function
+         String username = u_user.getText().trim();
+    String password = new String(u_pass.getPassword()).trim();
     
-    if (role != null) { 
-        JOptionPane.showMessageDialog(null, "Login Successfully");
-
-        if (role.equalsIgnoreCase("Admin")) { 
-            new adminDashboard().setVisible(true);
-        } else if (role.equalsIgnoreCase("Employee")) {
-            new employeeDashBoard().setVisible(true);
-        } else {
-            JOptionPane.showMessageDialog(null, "Unknown Role!");
-            return;
+    String role = loginAcc(username, password);
+    if (role != null) {
+        if (role.equalsIgnoreCase("admin")) {
+            // Create admin dashboard and set username
+            adminDashboard admin = new adminDashboard();
+            admin.setUsername(username); // Call the new method
+            admin.setVisible(true);
+            this.dispose();
+        } else if (role.equalsIgnoreCase("employee")) {
+            // Create employee dashboard and set username
+            employeeDashBoard employee = new employeeDashBoard();
+            employee.setUsername(username); // Call the new method
+            employee.setVisible(true);
+            this.dispose();
         }
-
-        this.dispose(); // Close current login form
     } else {
         JOptionPane.showMessageDialog(null, "Login Failed. Invalid Username or Password.");
-    }      
+    }
 
 
     }//GEN-LAST:event_jButton1ActionPerformed

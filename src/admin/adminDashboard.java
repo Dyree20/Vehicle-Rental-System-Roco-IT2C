@@ -8,6 +8,8 @@ package admin;
 import java.beans.PropertyVetoException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
 import vrs.Approval;
 import vrs.add_vehicles;
 import vrs.home;
@@ -20,18 +22,23 @@ import vrs.passwordResetRequests;
  */
 public class adminDashboard extends javax.swing.JFrame {
 
-    /**
-     * Creates new form adminDashboard
+    
+    private String currentUsername;
+    
+
+    
+    
+     /* Creates new form adminDashboard
      */
     public adminDashboard() {
         initComponents();
+       
+        
         a_users.addActionListener(new java.awt.event.ActionListener() {
-    public void actionPerformed(java.awt.event.ActionEvent evt) {
-        a_usersActionPerformed(evt);
-    }
-    
-    
-});
+        public void actionPerformed(java.awt.event.ActionEvent evt) {
+            a_usersActionPerformed(evt);
+        }
+    });
       reset_requests.addActionListener(new java.awt.event.ActionListener() {
     public void actionPerformed(java.awt.event.ActionEvent evt) {
         reset_requestsActionPerformed(evt);
@@ -61,6 +68,79 @@ private void a_usersActionPerformed(java.awt.event.ActionEvent evt) {
     }
 }
 
+public void setUsername(String username) {
+    this.currentUsername = username;
+    
+    // Format the welcome message to fit
+    if (username.length() > 6) {
+        // If username is too long, use multiple lines
+        
+        // Use a panel with BoxLayout for multiple lines
+        JPanel textPanel = new JPanel();
+        textPanel.setLayout(new javax.swing.BoxLayout(textPanel, javax.swing.BoxLayout.Y_AXIS));
+        textPanel.setOpaque(false); // Make it transparent
+        
+        // First line is "WELCOME"
+        JLabel welcomeLabel = new JLabel("WELCOME");
+        welcomeLabel.setFont(new java.awt.Font("Tahoma", 1, 14));
+        welcomeLabel.setForeground(java.awt.Color.WHITE);
+        welcomeLabel.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        welcomeLabel.setAlignmentX(java.awt.Component.CENTER_ALIGNMENT);
+        
+        // Second line is "Admin"
+        JLabel adminLabel = new JLabel("Admin");
+        adminLabel.setFont(new java.awt.Font("Tahoma", 1, 14));
+        adminLabel.setForeground(java.awt.Color.WHITE);
+        adminLabel.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        adminLabel.setAlignmentX(java.awt.Component.CENTER_ALIGNMENT);
+        
+        // Third line is the username
+        JLabel usernameLabel = new JLabel(username);
+        usernameLabel.setFont(new java.awt.Font("Tahoma", 1, 12));
+        usernameLabel.setForeground(java.awt.Color.WHITE);
+        usernameLabel.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        usernameLabel.setAlignmentX(java.awt.Component.CENTER_ALIGNMENT);
+        
+        textPanel.add(welcomeLabel);
+        textPanel.add(adminLabel);
+        textPanel.add(usernameLabel);
+        
+        // Clear and set panel
+        welcomePanel.removeAll();
+        welcomePanel.setLayout(new java.awt.BorderLayout());
+        welcomePanel.add(textPanel, java.awt.BorderLayout.CENTER);
+    } else {
+        // If username is short enough, use two lines
+        JPanel textPanel = new JPanel();
+        textPanel.setLayout(new javax.swing.BoxLayout(textPanel, javax.swing.BoxLayout.Y_AXIS));
+        textPanel.setOpaque(false); // Make it transparent
+        
+        // First line
+        JLabel welcomeLabel = new JLabel("WELCOME Admin");
+        welcomeLabel.setFont(new java.awt.Font("Tahoma", 1, 14));
+        welcomeLabel.setForeground(java.awt.Color.WHITE);
+        welcomeLabel.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        welcomeLabel.setAlignmentX(java.awt.Component.CENTER_ALIGNMENT);
+        
+        // Second line
+        JLabel usernameLabel = new JLabel(username);
+        usernameLabel.setFont(new java.awt.Font("Tahoma", 1, 14));
+        usernameLabel.setForeground(java.awt.Color.WHITE);
+        usernameLabel.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        usernameLabel.setAlignmentX(java.awt.Component.CENTER_ALIGNMENT);
+        
+        textPanel.add(welcomeLabel);
+        textPanel.add(usernameLabel);
+        
+        // Clear and set panel
+        welcomePanel.removeAll();
+        welcomePanel.setLayout(new java.awt.BorderLayout());
+        welcomePanel.add(textPanel, java.awt.BorderLayout.CENTER);
+    }
+    
+    welcomePanel.revalidate();
+    welcomePanel.repaint();
+}
 
     /**
      * This method is called from within the constructor to initialize the form.
@@ -83,6 +163,7 @@ private void a_usersActionPerformed(java.awt.event.ActionEvent evt) {
         p_approval = new javax.swing.JButton();
         a_users = new javax.swing.JButton();
         reset_requests = new javax.swing.JButton();
+        welcomePanel = new javax.swing.JPanel();
         mhome = new javax.swing.JDesktopPane();
 
         jMenu1.setText("jMenu1");
@@ -118,7 +199,7 @@ private void a_usersActionPerformed(java.awt.event.ActionEvent evt) {
         jLabel2.setText("jLabel2");
         jPanel1.add(jLabel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(370, 230, 450, 280));
 
-        jPanel2.setBackground(new java.awt.Color(255, 51, 153));
+        jPanel2.setBackground(new java.awt.Color(255, 153, 0));
 
         vehicles_dash.setFont(new java.awt.Font("Microsoft YaHei", 3, 12)); // NOI18N
         vehicles_dash.setText("VEHICLES");
@@ -170,6 +251,19 @@ private void a_usersActionPerformed(java.awt.event.ActionEvent evt) {
             }
         });
 
+        welcomePanel.setBackground(new java.awt.Color(255, 153, 0));
+
+        javax.swing.GroupLayout welcomePanelLayout = new javax.swing.GroupLayout(welcomePanel);
+        welcomePanel.setLayout(welcomePanelLayout);
+        welcomePanelLayout.setHorizontalGroup(
+            welcomePanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 0, Short.MAX_VALUE)
+        );
+        welcomePanelLayout.setVerticalGroup(
+            welcomePanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 136, Short.MAX_VALUE)
+        );
+
         javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
         jPanel2.setLayout(jPanel2Layout);
         jPanel2Layout.setHorizontalGroup(
@@ -189,11 +283,14 @@ private void a_usersActionPerformed(java.awt.event.ActionEvent evt) {
                         .addContainerGap()
                         .addComponent(a_users, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+            .addComponent(welcomePanel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
         );
         jPanel2Layout.setVerticalGroup(
             jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel2Layout.createSequentialGroup()
-                .addGap(175, 175, 175)
+                .addContainerGap()
+                .addComponent(welcomePanel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(28, 28, 28)
                 .addComponent(dashboard, javax.swing.GroupLayout.PREFERRED_SIZE, 47, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addComponent(vehicles_dash, javax.swing.GroupLayout.PREFERRED_SIZE, 47, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -369,5 +466,6 @@ private void a_usersActionPerformed(java.awt.event.ActionEvent evt) {
     private javax.swing.JButton p_approval;
     private javax.swing.JButton reset_requests;
     private javax.swing.JButton vehicles_dash;
+    private javax.swing.JPanel welcomePanel;
     // End of variables declaration//GEN-END:variables
 }

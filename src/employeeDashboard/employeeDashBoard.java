@@ -5,7 +5,13 @@
  */
 package employeeDashboard;
 
+import java.awt.Dimension;
+import javax.swing.JInternalFrame;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
 import vrs.loginForm;
+import vrs.rentals;
+
 
 /**
  *
@@ -13,12 +19,89 @@ import vrs.loginForm;
  */
 public class employeeDashBoard extends javax.swing.JFrame {
 
+    private String currentUsername;
+    private String currentUser;
+    
+     
+    
     /**
      * Creates new form employeeDashBoard
      */
     public employeeDashBoard() {
         initComponents();
+       
+        
+        
     }
+    
+    public void setUsername(String username) {
+    this.currentUsername = username;
+    
+    // Format the welcome message to fit
+    if (username.length() > 8) {
+        // If username is too long, use multiple lines
+        
+        // Use a panel with BoxLayout for multiple lines
+        JPanel textPanel = new JPanel();
+        textPanel.setLayout(new javax.swing.BoxLayout(textPanel, javax.swing.BoxLayout.Y_AXIS));
+        textPanel.setOpaque(false); // Make it transparent
+        
+        // First line is "WELCOME"
+        JLabel welcomeLabel = new JLabel("WELCOME");
+        welcomeLabel.setFont(new java.awt.Font("Tahoma", 1, 14));
+        welcomeLabel.setForeground(java.awt.Color.WHITE);
+        welcomeLabel.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        welcomeLabel.setAlignmentX(java.awt.Component.CENTER_ALIGNMENT);
+        
+        // Second line is the username
+        JLabel usernameLabel = new JLabel(username);
+        usernameLabel.setFont(new java.awt.Font("Tahoma", 1, 12));
+        usernameLabel.setForeground(java.awt.Color.WHITE);
+        usernameLabel.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        usernameLabel.setAlignmentX(java.awt.Component.CENTER_ALIGNMENT);
+        
+        textPanel.add(welcomeLabel);
+        textPanel.add(usernameLabel);
+        
+        // Clear and set panel
+        welcomePanel.removeAll();
+        welcomePanel.setLayout(new java.awt.BorderLayout());
+        welcomePanel.add(textPanel, java.awt.BorderLayout.CENTER);
+    } else {
+        // If username is short enough, use two lines
+        JPanel textPanel = new JPanel();
+        textPanel.setLayout(new javax.swing.BoxLayout(textPanel, javax.swing.BoxLayout.Y_AXIS));
+        textPanel.setOpaque(false); // Make it transparent
+        
+        // First line
+        JLabel welcomeLabel = new JLabel("WELCOME");
+        welcomeLabel.setFont(new java.awt.Font("Tahoma", 1, 14));
+        welcomeLabel.setForeground(java.awt.Color.WHITE);
+        welcomeLabel.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        welcomeLabel.setAlignmentX(java.awt.Component.CENTER_ALIGNMENT);
+        
+        // Second line
+        JLabel usernameLabel = new JLabel(username);
+        usernameLabel.setFont(new java.awt.Font("Tahoma", 1, 14));
+        usernameLabel.setForeground(java.awt.Color.WHITE);
+        usernameLabel.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        usernameLabel.setAlignmentX(java.awt.Component.CENTER_ALIGNMENT);
+        
+        textPanel.add(welcomeLabel);
+        textPanel.add(usernameLabel);
+        
+        // Clear and set panel
+        welcomePanel.removeAll();
+        welcomePanel.setLayout(new java.awt.BorderLayout());
+        welcomePanel.add(textPanel, java.awt.BorderLayout.CENTER);
+    }
+    
+    welcomePanel.revalidate();
+    welcomePanel.repaint();
+}
+    public void setCurrentUser(String username) {
+    this.currentUser = username;
+}
 
     /**
      * This method is called from within the constructor to initialize the form.
@@ -36,7 +119,9 @@ public class employeeDashBoard extends javax.swing.JFrame {
         jPanel2 = new javax.swing.JPanel();
         e_dash = new javax.swing.JButton();
         e_client = new javax.swing.JButton();
-        jButton1 = new javax.swing.JButton();
+        view_vehicles = new javax.swing.JButton();
+        welcomePanel = new javax.swing.JPanel();
+        mainD = new javax.swing.JDesktopPane();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setPreferredSize(new java.awt.Dimension(1085, 721));
@@ -62,7 +147,7 @@ public class employeeDashBoard extends javax.swing.JFrame {
 
         jPanel1.add(jPanel3, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 0, 1060, -1));
 
-        jPanel2.setBackground(new java.awt.Color(255, 51, 153));
+        jPanel2.setBackground(new java.awt.Color(255, 153, 0));
 
         e_dash.setFont(new java.awt.Font("Microsoft YaHei", 3, 12)); // NOI18N
         e_dash.setText("DASHBOARD");
@@ -74,14 +159,32 @@ public class employeeDashBoard extends javax.swing.JFrame {
 
         e_client.setFont(new java.awt.Font("Microsoft YaHei", 3, 12)); // NOI18N
         e_client.setText("ADD CLIENTS");
-
-        jButton1.setFont(new java.awt.Font("Microsoft YaHei", 3, 12)); // NOI18N
-        jButton1.setText("VIEW VEHICLES");
-        jButton1.addActionListener(new java.awt.event.ActionListener() {
+        e_client.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButton1ActionPerformed(evt);
+                e_clientActionPerformed(evt);
             }
         });
+
+        view_vehicles.setFont(new java.awt.Font("Microsoft YaHei", 3, 12)); // NOI18N
+        view_vehicles.setText("VIEW VEHICLES");
+        view_vehicles.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                view_vehiclesActionPerformed(evt);
+            }
+        });
+
+        welcomePanel.setBackground(new java.awt.Color(255, 153, 0));
+
+        javax.swing.GroupLayout welcomePanelLayout = new javax.swing.GroupLayout(welcomePanel);
+        welcomePanel.setLayout(welcomePanelLayout);
+        welcomePanelLayout.setHorizontalGroup(
+            welcomePanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 0, Short.MAX_VALUE)
+        );
+        welcomePanelLayout.setVerticalGroup(
+            welcomePanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 136, Short.MAX_VALUE)
+        );
 
         javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
         jPanel2.setLayout(jPanel2Layout);
@@ -90,24 +193,42 @@ public class employeeDashBoard extends javax.swing.JFrame {
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel2Layout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                    .addComponent(jButton1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(view_vehicles, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(e_dash, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(e_client, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                 .addContainerGap())
+            .addComponent(welcomePanel, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
         );
         jPanel2Layout.setVerticalGroup(
             jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel2Layout.createSequentialGroup()
-                .addGap(243, 243, 243)
+                .addGap(20, 20, 20)
+                .addComponent(welcomePanel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(87, 87, 87)
                 .addComponent(e_dash, javax.swing.GroupLayout.PREFERRED_SIZE, 47, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addComponent(e_client, javax.swing.GroupLayout.PREFERRED_SIZE, 45, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(18, 18, 18)
-                .addComponent(jButton1, javax.swing.GroupLayout.PREFERRED_SIZE, 45, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(view_vehicles, javax.swing.GroupLayout.PREFERRED_SIZE, 45, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap(231, Short.MAX_VALUE))
         );
 
         jPanel1.add(jPanel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 80, 150, 640));
+
+        mainD.setBackground(new java.awt.Color(255, 255, 255));
+
+        javax.swing.GroupLayout mainDLayout = new javax.swing.GroupLayout(mainD);
+        mainD.setLayout(mainDLayout);
+        mainDLayout.setHorizontalGroup(
+            mainDLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 910, Short.MAX_VALUE)
+        );
+        mainDLayout.setVerticalGroup(
+            mainDLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 620, Short.MAX_VALUE)
+        );
+
+        jPanel1.add(mainD, new org.netbeans.lib.awtextra.AbsoluteConstraints(150, 100, 910, 620));
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
@@ -124,7 +245,47 @@ public class employeeDashBoard extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void e_dashActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_e_dashActionPerformed
-        // TODO add your handling code here:
+         boolean isOpen = false;
+    JInternalFrame[] frames = mainD.getAllFrames();
+    for (JInternalFrame frame : frames) {
+        if (frame instanceof rentals) {
+            frame.moveToFront();
+            try {
+                frame.setSelected(true);
+            } catch (java.beans.PropertyVetoException e) {
+                // Handle exception
+            }
+            isOpen = true;
+            break;
+        }
+    }
+    
+    // If not open, create and show a new instance
+    if (!isOpen) {
+        rentals rentalForm = new rentals();
+        
+        // Get the current username from your dashboard
+        rentalForm.setCurrentUser(currentUsername); // Using the class variable
+        
+        // Add to desktop pane
+        mainD.add(rentalForm);
+        
+        // Center the form in the desktop pane
+        Dimension desktopSize = mainD.getSize();
+        Dimension frameSize = rentalForm.getSize();
+        rentalForm.setLocation(
+            (desktopSize.width - frameSize.width) / 2,
+            (desktopSize.height - frameSize.height) / 2
+        );
+        
+        // Show the form
+        rentalForm.setVisible(true);
+        try {
+            rentalForm.setSelected(true);
+        } catch (java.beans.PropertyVetoException e) {
+            // Handle exception
+        }
+    }
     }//GEN-LAST:event_e_dashActionPerformed
 
     private void logoutMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_logoutMouseClicked
@@ -133,9 +294,60 @@ public class employeeDashBoard extends javax.swing.JFrame {
        this.dispose();
     }//GEN-LAST:event_logoutMouseClicked
 
-    private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_jButton1ActionPerformed
+    private void view_vehiclesActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_view_vehiclesActionPerformed
+         for (java.awt.Component comp : mainD.getComponents()) {
+        if (comp instanceof vrs.v_vehicles) {
+            // Already open, bring to front
+            comp.setVisible(true);
+            try {
+                ((javax.swing.JInternalFrame) comp).setSelected(true);
+            } catch (java.beans.PropertyVetoException e) {
+                e.printStackTrace();
+            }
+            return;
+        }
+    }
+    
+    // Create and open new v_vehicles
+    vrs.v_vehicles vehicles = new vrs.v_vehicles();
+    mainD.add(vehicles);
+    vehicles.setVisible(true);
+    try {
+        vehicles.setMaximum(true); // Optional: maximize the frame
+        vehicles.setSelected(true);
+    } catch (java.beans.PropertyVetoException e) {
+        e.printStackTrace();
+    }
+
+    }//GEN-LAST:event_view_vehiclesActionPerformed
+
+    private void e_clientActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_e_clientActionPerformed
+        for (java.awt.Component comp : mainD.getComponents()) {
+        if (comp instanceof vrs.add_clients) {
+            // Already open, bring to front
+            comp.setVisible(true);
+            try {
+                ((javax.swing.JInternalFrame) comp).setSelected(true);
+            } catch (java.beans.PropertyVetoException e) {
+                e.printStackTrace();
+            }
+            return;
+        }
+    }
+    
+    // Create and open new add_clients
+    vrs.add_clients clients = new vrs.add_clients();
+    // Pass the current username (optional)
+    // clients.setUsername(currentUsername);
+    mainD.add(clients);
+    clients.setVisible(true);
+    try {
+        clients.setMaximum(true); // Optional: makes it fill the desktop pane
+        clients.setSelected(true);
+    } catch (java.beans.PropertyVetoException e) {
+        e.printStackTrace();
+    }
+    }//GEN-LAST:event_e_clientActionPerformed
 
     /**
      * @param args the command line arguments
@@ -175,11 +387,13 @@ public class employeeDashBoard extends javax.swing.JFrame {
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton e_client;
     private javax.swing.JButton e_dash;
-    private javax.swing.JButton jButton1;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel2;
     private javax.swing.JPanel jPanel3;
     private javax.swing.JButton logout;
+    private javax.swing.JDesktopPane mainD;
+    private javax.swing.JButton view_vehicles;
+    private javax.swing.JPanel welcomePanel;
     // End of variables declaration//GEN-END:variables
 }
