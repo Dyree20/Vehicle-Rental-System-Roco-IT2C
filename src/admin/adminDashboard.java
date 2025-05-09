@@ -5,9 +5,6 @@
  */
 package admin;
 
-import java.beans.PropertyVetoException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import vrs.Approval;
@@ -16,6 +13,13 @@ import vrs.home;
 import vrs.loginForm;
 import vrs.add_users;
 import vrs.passwordResetRequests;
+import java.awt.BorderLayout;
+import java.awt.FlowLayout;
+import javax.swing.border.EmptyBorder;
+import javax.swing.ImageIcon;
+import org.netbeans.lib.awtextra.AbsoluteLayout;
+import org.netbeans.lib.awtextra.AbsoluteConstraints;
+
 /**
  *
  * @author ROCO
@@ -24,6 +28,8 @@ public class adminDashboard extends javax.swing.JFrame {
 
     
     private String currentUsername;
+    
+    private JPanel logoPanel;
     
 
     
@@ -47,25 +53,13 @@ public class adminDashboard extends javax.swing.JFrame {
         
         
     }
-private void a_usersActionPerformed(java.awt.event.ActionEvent evt) {                                       
-    // Check if add_users frame is already open
-    for (java.awt.Component comp : mhome.getComponents()) {
-        if (comp instanceof add_users) {
-            comp.setVisible(true);
-            ((add_users) comp).toFront();
-            return; // Exit method if it's already open
-        }
-    }
-
-    // Create new add_users frame
-    add_users users = new add_users();
-    mhome.add(users);
-    users.setVisible(true);
-    try {
-        users.setSelected(true);
-    } catch (java.beans.PropertyVetoException e) {
-        e.printStackTrace();
-    }
+private void a_usersActionPerformed(java.awt.event.ActionEvent evt) {
+    mhome.removeAll();
+    add_users usersPanel = new add_users();
+    mhome.add(usersPanel);
+    usersPanel.setVisible(true);
+    mhome.revalidate();
+    mhome.repaint();
 }
 
 public void setUsername(String username) {
@@ -150,7 +144,6 @@ public void setUsername(String username) {
     @SuppressWarnings("unchecked")
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
-
         jMenu1 = new javax.swing.JMenu();
         jPanel1 = new javax.swing.JPanel();
         jPanel3 = new javax.swing.JPanel();
@@ -165,9 +158,9 @@ public void setUsername(String username) {
         reset_requests = new javax.swing.JButton();
         welcomePanel = new javax.swing.JPanel();
         mhome = new javax.swing.JDesktopPane();
+        logs = new javax.swing.JButton();
 
         jMenu1.setText("jMenu1");
-
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
         jPanel1.setBackground(new java.awt.Color(255, 51, 51));
@@ -176,7 +169,7 @@ public void setUsername(String username) {
         jPanel3.setBackground(new java.awt.Color(255, 153, 51));
         jPanel3.setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
 
-        jLabel1.setFont(new java.awt.Font("Tahoma", 3, 36)); // NOI18N
+        jLabel1.setFont(new java.awt.Font("Tahoma", 3, 36));
         jLabel1.setText("ADMIN PANEL");
         jPanel3.add(jLabel1, new org.netbeans.lib.awtextra.AbsoluteConstraints(160, 0, 504, 85));
 
@@ -195,21 +188,23 @@ public void setUsername(String username) {
 
         jPanel1.add(jPanel3, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 0, 1090, -1));
 
-        jLabel2.setIcon(new javax.swing.ImageIcon(getClass().getResource("/images/download-removebg-preview.png"))); // NOI18N
+        jLabel2.setIcon(new javax.swing.ImageIcon(getClass().getResource("/images/download-removebg-preview.png")));
         jLabel2.setText("jLabel2");
         jPanel1.add(jLabel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(370, 230, 450, 280));
 
         jPanel2.setBackground(new java.awt.Color(255, 153, 0));
+        jPanel2.setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
 
-        vehicles_dash.setFont(new java.awt.Font("Microsoft YaHei", 3, 12)); // NOI18N
+        vehicles_dash.setFont(new java.awt.Font("Microsoft YaHei", 3, 12));
         vehicles_dash.setText("VEHICLES");
         vehicles_dash.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 vehicles_dashActionPerformed(evt);
             }
         });
+        jPanel2.add(vehicles_dash, new org.netbeans.lib.awtextra.AbsoluteConstraints(10, 120, 130, 47));
 
-        dashboard.setFont(new java.awt.Font("Microsoft YaHei", 3, 12)); // NOI18N
+        dashboard.setFont(new java.awt.Font("Microsoft YaHei", 3, 12));
         dashboard.setText("DASHBOARD");
         dashboard.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseEntered(java.awt.event.MouseEvent evt) {
@@ -221,8 +216,9 @@ public void setUsername(String username) {
                 dashboardActionPerformed(evt);
             }
         });
+        jPanel2.add(dashboard, new org.netbeans.lib.awtextra.AbsoluteConstraints(10, 60, 130, 47));
 
-        p_approval.setFont(new java.awt.Font("Microsoft YaHei", 3, 12)); // NOI18N
+        p_approval.setFont(new java.awt.Font("Microsoft YaHei", 3, 12));
         p_approval.setText("APPROVAL");
         p_approval.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
@@ -234,107 +230,38 @@ public void setUsername(String username) {
                 p_approvalActionPerformed(evt);
             }
         });
+        jPanel2.add(p_approval, new org.netbeans.lib.awtextra.AbsoluteConstraints(10, 180, 130, 46));
 
-        a_users.setFont(new java.awt.Font("Microsoft YaHei", 3, 12)); // NOI18N
+        a_users.setFont(new java.awt.Font("Microsoft YaHei", 3, 12));
         a_users.setText("USERS");
         a_users.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 a_usersMouseClicked(evt);
             }
         });
+        jPanel2.add(a_users, new org.netbeans.lib.awtextra.AbsoluteConstraints(10, 240, 130, 50));
 
-        reset_requests.setFont(new java.awt.Font("Microsoft YaHei", 3, 12)); // NOI18N
+        reset_requests.setFont(new java.awt.Font("Microsoft YaHei", 3, 12));
         reset_requests.setText("REQUESTS");
         reset_requests.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 reset_requestsActionPerformed(evt);
             }
         });
+        jPanel2.add(reset_requests, new org.netbeans.lib.awtextra.AbsoluteConstraints(10, 300, 130, 50));
 
         welcomePanel.setBackground(new java.awt.Color(255, 153, 0));
-
-        javax.swing.GroupLayout welcomePanelLayout = new javax.swing.GroupLayout(welcomePanel);
-        welcomePanel.setLayout(welcomePanelLayout);
-        welcomePanelLayout.setHorizontalGroup(
-            welcomePanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 0, Short.MAX_VALUE)
-        );
-        welcomePanelLayout.setVerticalGroup(
-            welcomePanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 136, Short.MAX_VALUE)
-        );
-
-        javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
-        jPanel2.setLayout(jPanel2Layout);
-        jPanel2Layout.setHorizontalGroup(
-            jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel2Layout.createSequentialGroup()
-                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
-                    .addGroup(jPanel2Layout.createSequentialGroup()
-                        .addContainerGap()
-                        .addComponent(reset_requests, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                    .addGroup(javax.swing.GroupLayout.Alignment.LEADING, jPanel2Layout.createSequentialGroup()
-                        .addGap(10, 10, 10)
-                        .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(dashboard, javax.swing.GroupLayout.DEFAULT_SIZE, 130, Short.MAX_VALUE)
-                            .addComponent(vehicles_dash, javax.swing.GroupLayout.DEFAULT_SIZE, 130, Short.MAX_VALUE)
-                            .addComponent(p_approval, javax.swing.GroupLayout.DEFAULT_SIZE, 130, Short.MAX_VALUE)))
-                    .addGroup(javax.swing.GroupLayout.Alignment.LEADING, jPanel2Layout.createSequentialGroup()
-                        .addContainerGap()
-                        .addComponent(a_users, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-            .addComponent(welcomePanel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-        );
-        jPanel2Layout.setVerticalGroup(
-            jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel2Layout.createSequentialGroup()
-                .addContainerGap()
-                .addComponent(welcomePanel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(28, 28, 28)
-                .addComponent(dashboard, javax.swing.GroupLayout.PREFERRED_SIZE, 47, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addComponent(vehicles_dash, javax.swing.GroupLayout.PREFERRED_SIZE, 47, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addComponent(p_approval, javax.swing.GroupLayout.PREFERRED_SIZE, 46, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addComponent(a_users, javax.swing.GroupLayout.PREFERRED_SIZE, 50, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addComponent(reset_requests, javax.swing.GroupLayout.PREFERRED_SIZE, 50, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap())
-        );
+        jPanel2.add(welcomePanel, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 0, 150, 136));
 
         jPanel1.add(jPanel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 80, 150, 640));
 
         mhome.setBackground(new java.awt.Color(255, 51, 51));
-
-        javax.swing.GroupLayout mhomeLayout = new javax.swing.GroupLayout(mhome);
-        mhome.setLayout(mhomeLayout);
-        mhomeLayout.setHorizontalGroup(
-            mhomeLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 933, Short.MAX_VALUE)
-        );
-        mhomeLayout.setVerticalGroup(
-            mhomeLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 630, Short.MAX_VALUE)
-        );
-
         jPanel1.add(mhome, new org.netbeans.lib.awtextra.AbsoluteConstraints(150, 89, 933, 630));
 
-        javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
-        getContentPane().setLayout(layout);
-        layout.setHorizontalGroup(
-            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, 1085, javax.swing.GroupLayout.PREFERRED_SIZE)
-        );
-        layout.setVerticalGroup(
-            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
-                .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, 721, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(0, 0, Short.MAX_VALUE))
-        );
-
-        pack();
+        setTitle("Admin Dashboard");
+        setSize(1085, 721);
         setLocationRelativeTo(null);
+        setContentPane(jPanel1);
     }// </editor-fold>//GEN-END:initComponents
 
     private void vehicles_dashActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_vehicles_dashActionPerformed
@@ -357,9 +284,10 @@ public void setUsername(String username) {
     }//GEN-LAST:event_vehicles_dashActionPerformed
 
     private void dashboardActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_dashboardActionPerformed
-        home hm = new home();
-       mhome.add(hm).setVisible(true);
-       
+        mhome.removeAll();
+        mhome.add(logoPanel);
+        mhome.revalidate();
+        mhome.repaint();
     }//GEN-LAST:event_dashboardActionPerformed
 
     private void dashboardMouseEntered(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_dashboardMouseEntered
@@ -401,50 +329,57 @@ public void setUsername(String username) {
         // TODO add your handling code here:
     }//GEN-LAST:event_a_usersMouseClicked
 
-    private void reset_requestsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_reset_requestsActionPerformed
-   for (java.awt.Component comp : mhome.getComponents()) {
-        comp.setVisible(false);
-    }
-    
-    // Create new PasswordResetRequests frame
-    passwordResetRequests resetRequests = new passwordResetRequests();
-    mhome.add(resetRequests);
-    resetRequests.setVisible(true);
-        try {
-            resetRequests.setSelected(true);
-        } catch (PropertyVetoException ex) {
-            Logger.getLogger(adminDashboard.class.getName()).log(Level.SEVERE, null, ex);
+    private void reset_requestsActionPerformed(java.awt.event.ActionEvent evt) {
+        // Hide all other frames
+        for (java.awt.Component comp : mhome.getComponents()) {
+            comp.setVisible(false);
         }
-    }//GEN-LAST:event_reset_requestsActionPerformed
+
+        // Check if passwordResetRequests frame is already open
+        for (java.awt.Component comp : mhome.getComponents()) {
+            if (comp instanceof passwordResetRequests) {
+                comp.setVisible(true);
+                ((passwordResetRequests) comp).toFront();
+                return;
+            }
+        }
+
+        // Create new passwordResetRequests frame
+        passwordResetRequests requests = new passwordResetRequests();
+        mhome.add(requests);
+        requests.setVisible(true);
+        try {
+            requests.setSelected(true);
+        } catch (java.beans.PropertyVetoException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void logsActionPerformed(java.awt.event.ActionEvent evt) {
+        // Check if logs frame is already open
+        for (java.awt.Component comp : mhome.getComponents()) {
+            if (comp instanceof vrs.SystemLogs) {
+                comp.setVisible(true);
+                ((vrs.SystemLogs) comp).toFront();
+                return;
+            }
+        }
+
+        // Create new logs frame
+        vrs.SystemLogs logs = new vrs.SystemLogs();
+        mhome.add(logs);
+        logs.setVisible(true);
+        try {
+            logs.setSelected(true);
+        } catch (java.beans.PropertyVetoException e) {
+            e.printStackTrace();
+        }
+    }
 
     /**
      * @param args the command line arguments
      */
-    public static void main(String args[]) {
-        /* Set the Nimbus look and feel */
-        //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
-        /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
-         * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
-         */
-        try {
-            for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
-                if ("Nimbus".equals(info.getName())) {
-                    javax.swing.UIManager.setLookAndFeel(info.getClassName());
-                    break;
-                }
-            }
-        } catch (ClassNotFoundException ex) {
-            java.util.logging.Logger.getLogger(adminDashboard.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        } catch (InstantiationException ex) {
-            java.util.logging.Logger.getLogger(adminDashboard.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        } catch (IllegalAccessException ex) {
-            java.util.logging.Logger.getLogger(adminDashboard.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        } catch (javax.swing.UnsupportedLookAndFeelException ex) {
-            java.util.logging.Logger.getLogger(adminDashboard.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        }
-        //</editor-fold>
-
-        /* Create and display the form */
+    public static void main(String[] args) {
         java.awt.EventQueue.invokeLater(new Runnable() {
             public void run() {
                 new adminDashboard().setVisible(true);
@@ -467,5 +402,6 @@ public void setUsername(String username) {
     private javax.swing.JButton reset_requests;
     private javax.swing.JButton vehicles_dash;
     private javax.swing.JPanel welcomePanel;
+    private javax.swing.JButton logs;
     // End of variables declaration//GEN-END:variables
 }

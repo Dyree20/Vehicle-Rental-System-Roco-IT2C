@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -348,28 +349,32 @@ public void addVehicleCard(String name, String type, String price, String imageP
     }
 }
     
-   private boolean deleteVehicleFromDB(int vehicleId) {
-    try {
-        dbConnector db = new dbConnector();
-        Connection conn = db.getConnection();
-        
-        String query = "DELETE FROM tbl_vehicles WHERE v_id = ?";
-        PreparedStatement pst = conn.prepareStatement(query);
-        pst.setInt(1, vehicleId);
-        
-        int rowsDeleted = pst.executeUpdate();
-        pst.close();
-        conn.close();
-        
-        return rowsDeleted > 0;
-    } catch (SQLException ex) {
-        JOptionPane.showMessageDialog(this, "Database error: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-        ex.printStackTrace();
-        return false;
+   private boolean deleteVehicleFromDB(String make, String model) {
+        try {
+            dbConnector db = new dbConnector();
+            Connection conn = db.getConnection();
+            
+            // Create SQL statement to delete vehicle with matching make and model
+            String query = "DELETE FROM tbl_vehicles WHERE v_make = ? AND v_model = ?";
+            PreparedStatement pst = conn.prepareStatement(query);
+            pst.setString(1, make);
+            pst.setString(2, model);
+            
+            // Execute the delete
+            int rowsDeleted = pst.executeUpdate();
+            
+            // Close resources
+            pst.close();
+            conn.close();
+            
+            // Return true if at least one row was deleted
+            return rowsDeleted > 0;
+        } catch (SQLException ex) {
+            JOptionPane.showMessageDialog(this, "Database error: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            ex.printStackTrace();
+            return false;
+        }
     }
-    
-    
-}
     
     
     
@@ -615,94 +620,223 @@ public void addVehicleCard(String name, String type, String price, String imageP
 
     private void editActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_editActionPerformed
         if (selectedCard == null) {
-        JOptionPane.showMessageDialog(this, "Please select a vehicle to delete.", "No Selection", JOptionPane.WARNING_MESSAGE);
-        return;
-    }
-    
-    // Get vehicle information from the selected card
-    // We need to extract information to identify which vehicle to delete
-    String vehicleInfo = "";
-    
-    // Find JLabels in the selected card to extract information
-    Component[] components = selectedCard.getComponents();
-    for (Component component : components) {
-        if (component instanceof JPanel) {
-            JPanel panel = (JPanel) component;
-            Component[] subComponents = panel.getComponents();
-            for (Component subComp : subComponents) {
-                if (subComp instanceof JLabel) {
-                    JLabel label = (JLabel) subComp;
-                    String text = label.getText();
-                    if (text != null && text.startsWith("Name:")) {
-                        vehicleInfo = text.substring(6).trim(); // Extract name after "Name: "
-                        break;
+            JOptionPane.showMessageDialog(this, "Please select a vehicle to edit.", "No Selection", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        
+        // Get vehicle information from the selected card
+        final String[] vehicleInfo = {"", "", "", "", "", ""}; // make, model, year, plate, rate, status
+        
+        // Find JLabels in the selected card to extract information
+        Component[] components = selectedCard.getComponents();
+        for (Component component : components) {
+            if (component instanceof JPanel) {
+                JPanel panel = (JPanel) component;
+                Component[] subComponents = panel.getComponents();
+                for (Component subComp : subComponents) {
+                    if (subComp instanceof JLabel) {
+                        JLabel label = (JLabel) subComp;
+                        String text = label.getText();
+                        if (text != null) {
+                            if (text.startsWith("Name:")) {
+                                String[] nameParts = text.substring(6).trim().split(" ", 2);
+                                if (nameParts.length == 2) {
+                                    vehicleInfo[0] = nameParts[0]; // make
+                                    vehicleInfo[1] = nameParts[1]; // model
+                                }
+                            } else if (text.startsWith("Type:")) {
+                                String typeInfo = text.substring(6).trim();
+                                String[] parts = typeInfo.split(", ");
+                                for (String part : parts) {
+                                    if (part.startsWith("Year:")) {
+                                        vehicleInfo[2] = part.substring(6).trim();
+                                    } else if (part.startsWith("Plate:")) {
+                                        vehicleInfo[3] = part.substring(7).trim();
+                                    }
+                                }
+                            } else if (text.startsWith("Price:")) {
+                                String price = text.substring(7).trim();
+                                // Remove "₱" and " per day" to get just the number
+                                price = price.replace("₱", "").replace(" per day", "");
+                                vehicleInfo[4] = price;
+                            }
+                        }
                     }
                 }
             }
         }
-    }
-    
-    // Confirm deletion
-    int confirm = JOptionPane.showConfirmDialog(
-        this, 
-        "Are you sure you want to delete " + vehicleInfo + "?", 
-        "Confirm Deletion", 
-        JOptionPane.YES_NO_OPTION
-    );
-    
-    if (confirm == JOptionPane.YES_OPTION) {
-        // Extract make and model from the vehicle name
-        // Assuming the name format is "Make Model"
-        String[] parts = vehicleInfo.split(" ", 2);
-        if (parts.length < 2) {
-            JOptionPane.showMessageDialog(this, "Unable to identify vehicle information.", "Error", JOptionPane.ERROR_MESSAGE);
-            return;
-        }
         
-        String make = parts[0];
-        String model = parts[1];
+        // Create a dialog for editing vehicle information
+        JDialog dialog = new JDialog();
+        dialog.setTitle("Edit Vehicle");
+        dialog.setSize(500, 450);
+        dialog.setLocationRelativeTo(this);
+        dialog.setLayout(new BorderLayout());
         
-        // Delete from database
-        if (deleteVehicleFromDB(make, model)) {
-            // Remove from UI
-            vehicleListPanel.remove(selectedCard);
-            vehicleListPanel.revalidate();
-            vehicleListPanel.repaint();
-            selectedCard = null;
+        JPanel panel = new JPanel();
+        panel.setLayout(new GridLayout(7, 2, 10, 10));
+        panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        
+        // Add components to the panel
+        JLabel makeLabel = new JLabel("Make:");
+        JTextField makeField = new JTextField(vehicleInfo[0], 20);
+        
+        JLabel modelLabel = new JLabel("Model:");
+        JTextField modelField = new JTextField(vehicleInfo[1], 20);
+        
+        JLabel yearLabel = new JLabel("Year:");
+        JTextField yearField = new JTextField(vehicleInfo[2], 20);
+        
+        JLabel plateLabel = new JLabel("Plate Number:");
+        JTextField plateField = new JTextField(vehicleInfo[3], 20);
+        
+        JLabel rateLabel = new JLabel("Rate per Day (PHP):");
+        JTextField rateField = new JTextField(vehicleInfo[4], 20);
+        
+        JLabel statusLabel = new JLabel("Status:");
+        JComboBox<String> statusCombo = new JComboBox<>(new String[]{"Available", "Rented", "Maintenance"});
+        statusCombo.setSelectedItem(vehicleInfo[5]);
+        
+        JLabel imageLabel = new JLabel("Vehicle Image:");
+        JTextField imageField = new JTextField(20);
+        JButton browseButton = new JButton("Browse...");
+        
+        JPanel imagePanel = new JPanel(new BorderLayout());
+        imagePanel.add(imageField, BorderLayout.CENTER);
+        imagePanel.add(browseButton, BorderLayout.EAST);
+        
+        // File reference for the selected image
+        final File[] selectedImageFile = {null};
+        
+        // Add a file chooser for the image
+        browseButton.addActionListener(e -> {
+            JFileChooser fileChooser = new JFileChooser();
+            fileChooser.setFileFilter(new FileNameExtensionFilter("Image files", "jpg", "jpeg", "png", "gif"));
+            int result = fileChooser.showOpenDialog(dialog);
+            if (result == JFileChooser.APPROVE_OPTION) {
+                selectedImageFile[0] = fileChooser.getSelectedFile();
+                imageField.setText(selectedImageFile[0].getAbsolutePath());
+            }
+        });
+        
+        panel.add(makeLabel);
+        panel.add(makeField);
+        panel.add(modelLabel);
+        panel.add(modelField);
+        panel.add(yearLabel);
+        panel.add(yearField);
+        panel.add(plateLabel);
+        panel.add(plateField);
+        panel.add(rateLabel);
+        panel.add(rateField);
+        panel.add(statusLabel);
+        panel.add(statusCombo);
+        panel.add(imageLabel);
+        panel.add(imagePanel);
+        
+        // Add save button
+        JButton saveButton = new JButton("Save");
+        JButton cancelButton = new JButton("Cancel");
+        
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.add(saveButton);
+        buttonPanel.add(cancelButton);
+        
+        saveButton.addActionListener(e -> {
+            String newMake = makeField.getText().trim();
+            String newModel = modelField.getText().trim();
+            String newYear = yearField.getText().trim();
+            String newPlate = plateField.getText().trim();
+            String newRate = rateField.getText().trim();
+            String newStatus = statusCombo.getSelectedItem().toString();
             
-            JOptionPane.showMessageDialog(this, "Vehicle deleted successfully.", "Success", JOptionPane.INFORMATION_MESSAGE);
-        } else {
-            JOptionPane.showMessageDialog(this, "Failed to delete vehicle from database.", "Error", JOptionPane.ERROR_MESSAGE);
+            // Validate inputs
+            if (newMake.isEmpty() || newModel.isEmpty() || newYear.isEmpty() || newPlate.isEmpty() || newRate.isEmpty()) {
+                JOptionPane.showMessageDialog(dialog, "All fields except image are required.", "Validation Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            
+            // Validate year as a number
+            try {
+                int yearVal = Integer.parseInt(newYear);
+                if (yearVal < 1900 || yearVal > 2100) {
+                    JOptionPane.showMessageDialog(dialog, "Please enter a valid year.", "Validation Error", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+            } catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(dialog, "Year must be a valid number.", "Validation Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            
+            // Validate rate as a number
+            try {
+                Double.parseDouble(newRate);
+            } catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(dialog, "Rate must be a valid number.", "Validation Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            
+            // Update in database
+            if (updateVehicleInDB(vehicleInfo[0], vehicleInfo[1], newMake, newModel, newYear, newPlate, newRate, newStatus, selectedImageFile[0])) {
+                // Remove old card and add new one
+                vehicleListPanel.remove(selectedCard);
+                selectedCard = null;
+                loadVehiclesFromDB();
+                dialog.dispose();
+                JOptionPane.showMessageDialog(this, "Vehicle updated successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
+            } else {
+                JOptionPane.showMessageDialog(dialog, "Failed to update vehicle.", "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        });
+        
+        cancelButton.addActionListener(e -> dialog.dispose());
+        
+        dialog.add(panel, BorderLayout.CENTER);
+        dialog.add(buttonPanel, BorderLayout.SOUTH);
+        dialog.setVisible(true);
+    }
+    
+    private boolean updateVehicleInDB(String oldMake, String oldModel, String newMake, String newModel, 
+                                    String year, String plate, String rate, String status, File imageFile) {
+        try {
+            Connection conn = new dbConnector().getConnection();
+            
+            // Prepare the statement with all fields
+            String query = "UPDATE tbl_vehicles SET v_make=?, v_model=?, v_year=?, v_plate=?, v_rate=?, v_status=?, v_image=? WHERE v_make=? AND v_model=?";
+            PreparedStatement pst = conn.prepareStatement(query);
+            pst.setString(1, newMake);
+            pst.setString(2, newModel);
+            pst.setString(3, year);
+            pst.setString(4, plate);
+            pst.setString(5, rate);
+            pst.setString(6, status);
+            
+            // Handle image file if provided
+            if (imageFile != null) {
+                try {
+                    InputStream is = new FileInputStream(imageFile);
+                    pst.setBlob(7, is);
+                } catch (Exception e) {
+                    JOptionPane.showMessageDialog(this, "Error with image file: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                    return false;
+                }
+            } else {
+                pst.setNull(7, java.sql.Types.BLOB);
+            }
+            
+            pst.setString(8, oldMake);
+            pst.setString(9, oldModel);
+            
+            int result = pst.executeUpdate();
+            pst.close();
+            conn.close();
+            
+            return result > 0;
+        } catch (SQLException ex) {
+            JOptionPane.showMessageDialog(this, "Database Error: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            return false;
         }
     }
-}
-private boolean deleteVehicleFromDB(String make, String model) {
-    try {
-        dbConnector db = new dbConnector();
-        Connection conn = db.getConnection();
-        
-        // Create SQL statement to delete vehicle with matching make and model
-        String query = "DELETE FROM tbl_vehicles WHERE v_make = ? AND v_model = ?";
-        PreparedStatement pst = conn.prepareStatement(query);
-        pst.setString(1, make);
-        pst.setString(2, model);
-        
-        // Execute the delete
-        int rowsDeleted = pst.executeUpdate();
-        
-        // Close resources
-        pst.close();
-        conn.close();
-        
-        // Return true if at least one row was deleted
-        return rowsDeleted > 0;
-    } catch (SQLException ex) {
-        JOptionPane.showMessageDialog(this, "Database error: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-        ex.printStackTrace();
-        return false;
-    }
-
-    }//GEN-LAST:event_editActionPerformed
 
     private void deleteActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_deleteActionPerformed
        if (selectedCard == null) {

@@ -13,32 +13,104 @@ import javax.swing.*;
 import javax.swing.table.*;
 import java.util.Date;
 
-
 public class rentals extends javax.swing.JInternalFrame {
     
-private DefaultTableModel rentalTableModel;
+    private DefaultTableModel rentalTableModel;
     private int selectedRentalId = -1;
     private SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
     private JLabel lblVehicleImage;
     private JLabel lblVehicleId;
     private JLabel lblStatus;
+    
     // Detail panel components
     private JPanel detailPanel;
     private JTextField txtRentalId, txtVehicle, txtPlate, txtClient;
     private JTextField txtPhone, txtEmail, txtLicense;
     private JTextField txtStartDate, txtEndDate, txtAmount, txtStatus, txtCreatedBy;
+    
+    // UI Components
+    private JPanel jPanel1;
+    private JPanel jPanel2;
+    private JPanel jPanel3;
+    private JPanel jPanel4;
+    private JScrollPane jScrollPane1;
+    private JTable tblRentals;
+    private JTextField txtSearch;
+    private JButton btnSearch;
+    private JButton btnReturnVehicle;
+    private JButton btnViewDetails;
+    private JComboBox<String> cboFilter;
+    
     /**
      * Creates new form rentals
      */
     public rentals() {
         initComponents();
-         setupAdditionalComponents();
+        setupAdditionalComponents();
         setupTable();
         setupActionListeners();
         loadRentals("All");
-        
     }
-private void setupAdditionalComponents() {
+    
+    private void initComponents() {
+        // Initialize panels
+        jPanel1 = new JPanel();
+        jPanel2 = new JPanel();
+        jPanel3 = new JPanel();
+        jPanel4 = new JPanel();
+        
+        // Set panel properties
+        jPanel1.setBackground(new Color(110, 0, 0));
+        jPanel2.setBackground(new Color(110, 0, 0));
+        jPanel3.setBackground(Color.WHITE);
+        jPanel4.setBackground(new Color(110, 0, 0));
+        
+        // Set layouts
+        jPanel1.setLayout(new BorderLayout());
+        jPanel2.setLayout(new FlowLayout(FlowLayout.LEFT));
+        jPanel3.setLayout(new BorderLayout());
+        jPanel4.setLayout(new FlowLayout(FlowLayout.LEFT));
+        
+        // Initialize components
+        txtSearch = new JTextField(15);
+        btnSearch = new JButton("Search");
+        cboFilter = new JComboBox<>(new String[]{"All", "Active", "Completed"});
+        jScrollPane1 = new JScrollPane();
+        tblRentals = new JTable();
+        btnReturnVehicle = new JButton("RETURN VEHICLE");
+        btnViewDetails = new JButton("VIEW DETAILS");
+        
+        // Add components to panels
+        jPanel2.add(txtSearch);
+        jPanel2.add(btnSearch);
+        jPanel2.add(cboFilter);
+        
+        jScrollPane1.setViewportView(tblRentals);
+        jPanel3.add(jScrollPane1, BorderLayout.CENTER);
+        
+        jPanel4.add(btnReturnVehicle);
+        jPanel4.add(btnViewDetails);
+        
+        // Add panels to main panel
+        jPanel1.add(jPanel2, BorderLayout.NORTH);
+        jPanel1.add(jPanel3, BorderLayout.CENTER);
+        jPanel1.add(jPanel4, BorderLayout.SOUTH);
+        
+        // Add main panel to frame
+        getContentPane().add(jPanel1, BorderLayout.CENTER);
+        
+        // Set frame properties
+        setClosable(true);
+        setIconifiable(true);
+        setMaximizable(true);
+        setResizable(true);
+        setTitle("Rentals Management");
+        
+        // Pack
+        pack();
+    }
+    
+    private void setupAdditionalComponents() {
         // Set filter options
         cboFilter.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "All", "Active", "Completed" }));
         
@@ -233,28 +305,58 @@ private void setupAdditionalComponents() {
         tblRentals.getColumnModel().getColumn(6).setPreferredWidth(80);  // Status
         tblRentals.getColumnModel().getColumn(7).setPreferredWidth(100); // Created By
         tblRentals.getColumnModel().getColumn(8).setPreferredWidth(80);  // Actions
+
+        // Enable row selection
+        tblRentals.setRowSelectionAllowed(true);
+        tblRentals.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        
+        // Add mouse listener for double-click
+        tblRentals.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                if (evt.getClickCount() == 2) {
+                    int row = tblRentals.getSelectedRow();
+                    if (row != -1) {
+                        selectedRentalId = Integer.parseInt(tblRentals.getValueAt(row, 0).toString());
+                        loadRentalDetails(selectedRentalId);
+                    }
+                }
+            }
+        });
     }
     
     private void setupActionListeners() {
-        // Add listeners to buttons
-        btnSearch.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btnSearchActionPerformed(evt);
+        // Search button
+        btnSearch.addActionListener(e -> {
+            String searchText = txtSearch.getText().trim();
+            if (!searchText.isEmpty()) {
+                loadRentals(cboFilter.getSelectedItem().toString());
+            } else {
+                JOptionPane.showMessageDialog(this, "Please enter search text", "Search Error", JOptionPane.WARNING_MESSAGE);
             }
         });
-        
-        btnReturnVehicle.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btnReturnVehicleActionPerformed(evt);
+
+        // Return Vehicle button
+        btnReturnVehicle.addActionListener(e -> {
+            if (selectedRentalId == -1) {
+                JOptionPane.showMessageDialog(this, "Please select a rental first", "No Selection", JOptionPane.WARNING_MESSAGE);
+                return;
             }
+            returnVehicle();
         });
-        
-        btnViewDetails.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btnViewDetailsActionPerformed(evt);
+
+        // View Details button
+        btnViewDetails.addActionListener(e -> {
+            if (selectedRentalId == -1) {
+                JOptionPane.showMessageDialog(this, "Please select a rental first", "No Selection", JOptionPane.WARNING_MESSAGE);
+                return;
             }
+            viewRentalDetails();
         });
-        
+
+        // Filter combo box
+        cboFilter.addActionListener(e -> loadRentals(cboFilter.getSelectedItem().toString()));
+
         // Add table selection listener
         tblRentals.getSelectionModel().addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting()) {
@@ -262,47 +364,56 @@ private void setupAdditionalComponents() {
                 if (selectedRow != -1) {
                     selectedRentalId = Integer.parseInt(tblRentals.getValueAt(selectedRow, 0).toString());
                     String status = tblRentals.getValueAt(selectedRow, 6).toString();
-                    
-                    // Enable/disable return button based on status
                     btnReturnVehicle.setEnabled(status.equalsIgnoreCase("active"));
-                    
-                    // Load rental details
                     loadRentalDetails(selectedRentalId);
+                } else {
+                    selectedRentalId = -1;
+                    btnReturnVehicle.setEnabled(false);
+                    clearDetailPanel();
                 }
             }
         });
+
+        // Add enter key listener to search field
+        txtSearch.addActionListener(e -> btnSearch.doClick());
     }
     
     private void loadRentals(String filter) {
+        Connection con = null;
+        PreparedStatement pst = null;
+        ResultSet rs = null;
+        
         try {
             rentalTableModel.setRowCount(0); // Clear existing rows
             
-            Connection con = new dbConnector().getConnection();
-            String query = "SELECT r.r_id, v.v_make, v.v_model, c.c_name, r.r_start_date, r.r_end_date, " +
-                          "r.r_total_amount, r.r_status, r.r_created_by " +
-                          "FROM tbl_rentals r " +
-                          "JOIN tbl_vehicles v ON r.r_vehicle_id = v.v_id " +
-                          "JOIN tbl_clients c ON r.r_client_id = c.c_id";
+            con = new dbConnector().getConnection();
+            StringBuilder query = new StringBuilder(
+                "SELECT r.r_id, v.v_make, v.v_model, c.c_name, r.r_start_date, r.r_end_date, " +
+                "r.r_total_amount, r.r_status, r.r_created_by " +
+                "FROM tbl_rentals r " +
+                "JOIN tbl_vehicles v ON r.r_vehicle_id = v.v_id " +
+                "JOIN tbl_clients c ON r.r_client_id = c.c_id"
+            );
             
             // Apply filter if not "All"
             if (!filter.equals("All")) {
-                query += " WHERE r.r_status = ?";
+                query.append(" WHERE r.r_status = ?");
             }
             
             // Add search filter if provided
             String searchText = txtSearch.getText().trim();
             if (!searchText.isEmpty()) {
                 if (filter.equals("All")) {
-                    query += " WHERE";
+                    query.append(" WHERE");
                 } else {
-                    query += " AND";
+                    query.append(" AND");
                 }
-                query += " (v.v_make LIKE ? OR v.v_model LIKE ? OR c.c_name LIKE ? OR r.r_created_by LIKE ?)";
+                query.append(" (v.v_make LIKE ? OR v.v_model LIKE ? OR c.c_name LIKE ? OR r.r_created_by LIKE ?)");
             }
             
-            query += " ORDER BY r.r_date_created DESC";
+            query.append(" ORDER BY r.r_date_created DESC");
             
-            PreparedStatement pst = con.prepareStatement(query);
+            pst = con.prepareStatement(query.toString());
             
             int paramIndex = 1;
             if (!filter.equals("All")) {
@@ -317,13 +428,14 @@ private void setupAdditionalComponents() {
                 pst.setString(paramIndex++, pattern);
             }
             
-            ResultSet rs = pst.executeQuery();
+            rs = pst.executeQuery();
             
             while (rs.next()) {
                 // Format the vehicle and dates
                 String vehicle = rs.getString("v_make") + " " + rs.getString("v_model");
                 String startDate = dateFormat.format(rs.getDate("r_start_date"));
                 String endDate = dateFormat.format(rs.getDate("r_end_date"));
+                double amount = rs.getDouble("r_total_amount");
                 
                 // Add a row to the table
                 rentalTableModel.addRow(new Object[] {
@@ -332,32 +444,30 @@ private void setupAdditionalComponents() {
                     rs.getString("c_name"),
                     startDate,
                     endDate,
-                    "$" + rs.getDouble("r_total_amount"),
+                    "₱" + String.format("%.2f", amount),
                     rs.getString("r_status"),
                     rs.getString("r_created_by"),
                     "Return" // Button text
                 });
             }
             
-            rs.close();
-            pst.close();
-            con.close();
-            
-            // Show message if no rentals found
-            if (rentalTableModel.getRowCount() == 0) {
-                lblStatus.setText("No rentals found");
-            } else {
-                lblStatus.setText(rentalTableModel.getRowCount() + " rentals found");
-            }
+            // Update status label
+            updateStatusLabel();
             
         } catch (SQLException e) {
-            JOptionPane.showMessageDialog(this, "Error loading rentals: " + e.getMessage());
+            handleDatabaseError("Error loading rentals", e);
+        } finally {
+            closeResources(con, pst, rs);
         }
     }
     
     private void loadRentalDetails(int rentalId) {
+        Connection con = null;
+        PreparedStatement pst = null;
+        ResultSet rs = null;
+        
         try {
-            Connection con = new dbConnector().getConnection();
+            con = new dbConnector().getConnection();
             String query = "SELECT r.*, v.v_make, v.v_model, v.v_year, v.v_plate, v.v_image, " +
                           "c.c_name, c.c_phone, c.c_email, c.c_license_number " +
                           "FROM tbl_rentals r " +
@@ -365,198 +475,228 @@ private void setupAdditionalComponents() {
                           "JOIN tbl_clients c ON r.r_client_id = c.c_id " +
                           "WHERE r.r_id = ?";
             
-            PreparedStatement pst = con.prepareStatement(query);
+            pst = con.prepareStatement(query);
             pst.setInt(1, rentalId);
-            ResultSet rs = pst.executeQuery();
+            rs = pst.executeQuery();
             
             if (rs.next()) {
-                // Display rental details in the detail panel components
-                txtRentalId.setText(String.valueOf(rs.getInt("r_id")));
-                txtVehicle.setText(rs.getString("v_make") + " " + rs.getString("v_model") + " (" + rs.getString("v_year") + ")");
-                txtPlate.setText(rs.getString("v_plate"));
-                txtClient.setText(rs.getString("c_name"));
-                txtPhone.setText(rs.getString("c_phone"));
-                txtEmail.setText(rs.getString("c_email"));
-                txtLicense.setText(rs.getString("c_license_number"));
-                txtStartDate.setText(dateFormat.format(rs.getDate("r_start_date")));
-                txtEndDate.setText(dateFormat.format(rs.getDate("r_end_date")));
-                txtAmount.setText("$" + rs.getDouble("r_total_amount"));
-                txtStatus.setText(rs.getString("r_status"));
-                txtCreatedBy.setText(rs.getString("r_created_by"));
+                updateDetailPanel(rs);
+            } else {
+                JOptionPane.showMessageDialog(this, "Rental not found", "Error", JOptionPane.ERROR_MESSAGE);
+            }
+            
+        } catch (SQLException e) {
+            handleDatabaseError("Error loading rental details", e);
+        } finally {
+            closeResources(con, pst, rs);
+        }
+    }
+    
+    private void updateDetailPanel(ResultSet rs) throws SQLException {
+        // Display rental details in the detail panel components
+        txtRentalId.setText(String.valueOf(rs.getInt("r_id")));
+        txtVehicle.setText(rs.getString("v_make") + " " + rs.getString("v_model") + " (" + rs.getString("v_year") + ")");
+        txtPlate.setText(rs.getString("v_plate"));
+        txtClient.setText(rs.getString("c_name"));
+        txtPhone.setText(rs.getString("c_phone"));
+        txtEmail.setText(rs.getString("c_email"));
+        txtLicense.setText(rs.getString("c_license_number"));
+        txtStartDate.setText(dateFormat.format(rs.getDate("r_start_date")));
+        txtEndDate.setText(dateFormat.format(rs.getDate("r_end_date")));
+        txtAmount.setText("₱" + String.format("%.2f", rs.getDouble("r_total_amount")));
+        txtStatus.setText(rs.getString("r_status"));
+        txtCreatedBy.setText(rs.getString("r_created_by"));
+        
+        // Store the vehicle ID for return processing
+        lblVehicleId.setText(String.valueOf(rs.getInt("r_vehicle_id")));
+        
+        // Display vehicle image
+        updateVehicleImage(rs.getBytes("v_image"));
+    }
+    
+    private void updateVehicleImage(byte[] imageData) {
+        if (imageData != null && imageData.length > 0) {
+            try {
+                ImageIcon imageIcon = new ImageIcon(imageData);
+                Image image = imageIcon.getImage().getScaledInstance(200, 150, Image.SCALE_SMOOTH);
+                lblVehicleImage.setIcon(new ImageIcon(image));
+                lblVehicleImage.setText("");
+            } catch (Exception e) {
+                lblVehicleImage.setIcon(null);
+                lblVehicleImage.setText("Invalid Image");
+            }
+        } else {
+            lblVehicleImage.setIcon(null);
+            lblVehicleImage.setText("No Image");
+        }
+    }
+    
+    private void updateStatusLabel() {
+        int rowCount = rentalTableModel.getRowCount();
+        if (rowCount == 0) {
+            lblStatus.setText("No rentals found");
+        } else {
+            lblStatus.setText(rowCount + " rental" + (rowCount == 1 ? "" : "s") + " found");
+        }
+    }
+    
+    private void handleDatabaseError(String message, SQLException e) {
+        String errorMessage = message + ": " + e.getMessage();
+        System.err.println(errorMessage);
+        e.printStackTrace();
+        JOptionPane.showMessageDialog(this, errorMessage, "Database Error", JOptionPane.ERROR_MESSAGE);
+    }
+    
+    private void closeResources(Connection con, PreparedStatement pst, ResultSet rs) {
+        try {
+            if (rs != null) rs.close();
+            if (pst != null) pst.close();
+            if (con != null) con.close();
+        } catch (SQLException e) {
+            System.err.println("Error closing resources: " + e.getMessage());
+        }
+    }
+    
+    private void returnVehicle() {
+        if (selectedRentalId == -1) {
+            JOptionPane.showMessageDialog(this, "Please select a rental first", "No Selection", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        
+        Connection con = null;
+        PreparedStatement statusPst = null;
+        PreparedStatement rentalPst = null;
+        PreparedStatement vehiclePst = null;
+        ResultSet statusRs = null;
+        
+        try {
+            con = new dbConnector().getConnection();
+            
+            // Get rental status
+            String statusQuery = "SELECT r_status, r_vehicle_id FROM tbl_rentals WHERE r_id = ?";
+            statusPst = con.prepareStatement(statusQuery);
+            statusPst.setInt(1, selectedRentalId);
+            statusRs = statusPst.executeQuery();
+            
+            if (statusRs.next()) {
+                String status = statusRs.getString("r_status");
+                int vehicleId = statusRs.getInt("r_vehicle_id");
                 
-                // Store the vehicle ID for return processing
-                lblVehicleId.setText(String.valueOf(rs.getInt("r_vehicle_id")));
+                if (!status.equalsIgnoreCase("active")) {
+                    JOptionPane.showMessageDialog(this, "This rental is already " + status, "Invalid Status", JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
                 
-                // Display vehicle image
-                byte[] imageData = rs.getBytes("v_image");
-                if (imageData != null && imageData.length > 0) {
-                    ImageIcon imageIcon = new ImageIcon(imageData);
-                    Image image = imageIcon.getImage().getScaledInstance(200, 150, Image.SCALE_SMOOTH);
-                    lblVehicleImage.setIcon(new ImageIcon(image));
-                    lblVehicleImage.setText("");
-                } else {
-                    lblVehicleImage.setIcon(null);
-                    lblVehicleImage.setText("No Image");
+                // Confirm return
+                int confirm = JOptionPane.showConfirmDialog(this, 
+                        "Are you sure you want to mark this vehicle as returned?", 
+                        "Confirm Return", 
+                        JOptionPane.YES_NO_OPTION);
+                
+                if (confirm != JOptionPane.YES_OPTION) {
+                    return;
+                }
+                
+                // Process return
+                con.setAutoCommit(false); // Start transaction
+                
+                try {
+                    // 1. Update rental status
+                    String rentalQuery = "UPDATE tbl_rentals SET r_status = 'completed', r_date_returned = CURRENT_TIMESTAMP WHERE r_id = ?";
+                    rentalPst = con.prepareStatement(rentalQuery);
+                    rentalPst.setInt(1, selectedRentalId);
+                    rentalPst.executeUpdate();
+                    
+                    // 2. Update vehicle status
+                    String vehicleQuery = "UPDATE tbl_vehicles SET v_status = 'available' WHERE v_id = ?";
+                    vehiclePst = con.prepareStatement(vehicleQuery);
+                    vehiclePst.setInt(1, vehicleId);
+                    vehiclePst.executeUpdate();
+                    
+                    // Commit transaction
+                    con.commit();
+                    
+                    JOptionPane.showMessageDialog(this, "Vehicle returned successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
+                    
+                    // Refresh the table
+                    loadRentals(cboFilter.getSelectedItem().toString());
+                    
+                    // Reset selection
+                    selectedRentalId = -1;
+                    btnReturnVehicle.setEnabled(false);
+                    
+                } catch (SQLException e) {
+                    // Rollback transaction on error
+                    if (con != null) {
+                        try {
+                            con.rollback();
+                        } catch (SQLException ex) {
+                            handleDatabaseError("Error rolling back transaction", ex);
+                        }
+                    }
+                    throw e;
                 }
             }
             
-            rs.close();
-            pst.close();
-            con.close();
-            
         } catch (SQLException e) {
-            JOptionPane.showMessageDialog(this, "Error loading rental details: " + e.getMessage());
+            handleDatabaseError("Error processing return", e);
+        } finally {
+            closeResources(con, statusPst, statusRs);
+            closeResources(null, rentalPst, null);
+            closeResources(null, vehiclePst, null);
         }
     }
     
-   private void returnVehicle() {
-    if (selectedRentalId == -1) {
-        JOptionPane.showMessageDialog(this, "Please select a rental first");
-        return;
-    }
-    
-    try {
-        // Get rental status
-        Connection con = new dbConnector().getConnection();
-        String statusQuery = "SELECT r_status, r_vehicle_id FROM tbl_rentals WHERE r_id = ?";
-        PreparedStatement statusPst = con.prepareStatement(statusQuery);
-        statusPst.setInt(1, selectedRentalId);
-        ResultSet statusRs = statusPst.executeQuery();
-        
-        if (statusRs.next()) {
-            String status = statusRs.getString("r_status");
-            int vehicleId = statusRs.getInt("r_vehicle_id");
-            
-            if (!status.equalsIgnoreCase("active")) {
-                JOptionPane.showMessageDialog(this, "This rental is already " + status);
-                statusRs.close();
-                statusPst.close();
-                con.close();
-                return;
-            }
-            
-            // Confirm return
-            int confirm = JOptionPane.showConfirmDialog(this, 
-                    "Are you sure you want to mark this vehicle as returned?", 
-                    "Confirm Return", 
-                    JOptionPane.YES_NO_OPTION);
-            
-            if (confirm != JOptionPane.YES_OPTION) {
-                statusRs.close();
-                statusPst.close();
-                con.close();
-                return;
-            }
-            
-            // Process return
-            con.setAutoCommit(false); // Start transaction
-            
-            // 1. Update rental status
-            String rentalQuery = "UPDATE tbl_rentals SET r_status = 'completed' WHERE r_id = ?";
-            PreparedStatement rentalPst = con.prepareStatement(rentalQuery);
-            rentalPst.setInt(1, selectedRentalId);
-            rentalPst.executeUpdate();
-            
-            // 2. Update vehicle status
-            String vehicleQuery = "UPDATE tbl_vehicles SET v_status = 'available' WHERE v_id = ?";
-            PreparedStatement vehiclePst = con.prepareStatement(vehicleQuery);
-            vehiclePst.setInt(1, vehicleId);
-            vehiclePst.executeUpdate();
-            
-            // Commit transaction
-            con.commit();
-            
-            JOptionPane.showMessageDialog(this, "Vehicle returned successfully!");
-            
-            // Refresh the table
-            loadRentals(cboFilter.getSelectedItem().toString());
-            
-            // Reset selection
-            selectedRentalId = -1;
-            btnReturnVehicle.setEnabled(false);
-            
-            rentalPst.close();
-            vehiclePst.close();
-        }
-        
-        statusRs.close();
-        statusPst.close();
-        con.close();
-        
-    } catch (SQLException e) {
-        JOptionPane.showMessageDialog(this, "Error processing return: " + e.getMessage());
-    }
-}
     private void viewRentalDetails() {
-    if (selectedRentalId == -1) {
-        JOptionPane.showMessageDialog(this, "Please select a rental first");
-        return;
-    }
-    
-    try {
-        Connection con = new dbConnector().getConnection();
-        String query = "SELECT r.*, v.v_make, v.v_model, v.v_year, v.v_plate, " +
-                      "c.c_name, c.c_phone, c.c_email, c.c_license_number " +
-                      "FROM tbl_rentals r " +
-                      "JOIN tbl_vehicles v ON r.r_vehicle_id = v.v_id " +
-                      "JOIN tbl_clients c ON r.r_client_id = c.c_id " +
-                      "WHERE r.r_id = ?";
-        
-        PreparedStatement pst = con.prepareStatement(query);
-        pst.setInt(1, selectedRentalId);
-        ResultSet rs = pst.executeQuery();
-        
-        if (rs.next()) {
-            // Create message with rental details
-            StringBuilder details = new StringBuilder();
-            details.append("RENTAL DETAILS\n\n");
-            details.append("Rental ID: ").append(rs.getInt("r_id")).append("\n");
-            details.append("Vehicle: ").append(rs.getString("v_make")).append(" ");
-            details.append(rs.getString("v_model")).append(" (").append(rs.getString("v_year")).append(")\n");
-            details.append("Plate Number: ").append(rs.getString("v_plate")).append("\n");
-            details.append("Client: ").append(rs.getString("c_name")).append("\n");
-            details.append("Phone: ").append(rs.getString("c_phone")).append("\n");
-            details.append("Email: ").append(rs.getString("c_email")).append("\n");
-            details.append("License: ").append(rs.getString("c_license_number")).append("\n");
-            details.append("Start Date: ").append(dateFormat.format(rs.getDate("r_start_date"))).append("\n");
-            details.append("End Date: ").append(dateFormat.format(rs.getDate("r_end_date"))).append("\n");
-            details.append("Amount: $").append(rs.getDouble("r_total_amount")).append("\n");
-            details.append("Status: ").append(rs.getString("r_status")).append("\n");
-            details.append("Created By: ").append(rs.getString("r_created_by")).append("\n");
-            
-            // Show the details in a message dialog
-            JOptionPane.showMessageDialog(this, details.toString(), "Rental Details", JOptionPane.INFORMATION_MESSAGE);
+        if (selectedRentalId == -1) {
+            JOptionPane.showMessageDialog(this, "Please select a rental first", "No Selection", JOptionPane.WARNING_MESSAGE);
+            return;
         }
         
-        rs.close();
-        pst.close();
-        con.close();
-        
-    } catch (SQLException e) {
-        JOptionPane.showMessageDialog(this, "Error loading rental details: " + e.getMessage());
-    }
-}
-    // Button renderer for the Actions column
-    // Button renderer for the Actions column
-class ButtonRenderer extends JButton implements TableCellRenderer {
-    public ButtonRenderer() {
-        setOpaque(true);
+        // Instead of showing a message dialog, just load the details in the detail panel
+        loadRentalDetails(selectedRentalId);
     }
     
-    @Override
-    public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
-        String status = table.getValueAt(row, 6).toString();
-        if (status.equalsIgnoreCase("active")) {
-            setText("Return");
-            setEnabled(true);
-        } else {
-            setText("Completed");
-            setEnabled(false);
+    private void clearDetailPanel() {
+        txtRentalId.setText("");
+        txtVehicle.setText("");
+        txtPlate.setText("");
+        txtClient.setText("");
+        txtPhone.setText("");
+        txtEmail.setText("");
+        txtLicense.setText("");
+        txtStartDate.setText("");
+        txtEndDate.setText("");
+        txtAmount.setText("");
+        txtStatus.setText("");
+        txtCreatedBy.setText("");
+        lblVehicleImage.setIcon(null);
+        lblVehicleImage.setText("No Image");
+    }
+    
+    // Button renderer for the Actions column
+    class ButtonRenderer extends JButton implements TableCellRenderer {
+        public ButtonRenderer() {
+            setOpaque(true);
         }
         
-        return this;
+        @Override
+        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+            String status = table.getValueAt(row, 6).toString();
+            if (status.equalsIgnoreCase("active")) {
+                setText("Return");
+                setEnabled(true);
+                setBackground(isSelected ? table.getSelectionBackground() : table.getBackground());
+                setForeground(isSelected ? table.getSelectionForeground() : table.getForeground());
+            } else {
+                setText("Completed");
+                setEnabled(false);
+                setBackground(table.getBackground());
+                setForeground(Color.GRAY);
+            }
+            return this;
+        }
     }
-}
     
     // Button editor for the Actions column
     class ButtonEditor extends DefaultCellEditor {
@@ -568,7 +708,17 @@ class ButtonRenderer extends JButton implements TableCellRenderer {
             super(checkBox);
             button = new JButton();
             button.setOpaque(true);
-            button.addActionListener(e -> fireEditingStopped());
+            button.addActionListener(e -> {
+                fireEditingStopped();
+                if (isPushed) {
+                    int row = tblRentals.getSelectedRow();
+                    if (row != -1 && label.equals("Return")) {
+                        selectedRentalId = Integer.parseInt(tblRentals.getValueAt(row, 0).toString());
+                        loadRentalDetails(selectedRentalId);
+                        returnVehicle();
+                    }
+                }
+            });
         }
         
         @Override
@@ -578,10 +728,14 @@ class ButtonRenderer extends JButton implements TableCellRenderer {
                 label = "Return";
                 button.setText(label);
                 button.setEnabled(true);
+                button.setBackground(isSelected ? table.getSelectionBackground() : table.getBackground());
+                button.setForeground(isSelected ? table.getSelectionForeground() : table.getForeground());
             } else {
                 label = "Completed";
                 button.setText(label);
                 button.setEnabled(false);
+                button.setBackground(table.getBackground());
+                button.setForeground(Color.GRAY);
             }
             isPushed = true;
             return button;
@@ -598,200 +752,5 @@ class ButtonRenderer extends JButton implements TableCellRenderer {
             isPushed = false;
             return super.stopCellEditing();
         }
-        
-        @Override
-        protected void fireEditingStopped() {
-            super.fireEditingStopped();
-            if (isPushed) {
-                // Get the selected row and rental ID
-                int row = tblRentals.getSelectedRow();
-                if (row != -1 && label.equals("Return")) {
-                    selectedRentalId = Integer.parseInt(tblRentals.getValueAt(row, 0).toString());
-                    loadRentalDetails(selectedRentalId);
-                    returnVehicle();
-                }
-            }
-        }
     }
-    
-    
-    
-    // Event handler methods
-    private void btnSearchActionPerformed(java.awt.event.ActionEvent evt) {
-        loadRentals(cboFilter.getSelectedItem().toString());
-    }
-    
-    private void btnReturnVehicleActionPerformed(java.awt.event.ActionEvent evt) {
-        returnVehicle();
-    }
-    
-    private void btnViewDetailsActionPerformed(java.awt.event.ActionEvent evt) {
-        if (selectedRentalId == -1) {
-            JOptionPane.showMessageDialog(this, "Please select a rental first");
-            return;
-        }
-        
-        // Create a formatted message with rental details
-        StringBuilder details = new StringBuilder();
-        details.append("RENTAL DETAILS\n\n");
-        details.append("Rental ID: ").append(txtRentalId.getText()).append("\n");
-        details.append("Vehicle: ").append(txtVehicle.getText()).append("\n");
-        details.append("Plate Number: ").append(txtPlate.getText()).append("\n");
-        details.append("Client: ").append(txtClient.getText()).append("\n");
-        details.append("Phone: ").append(txtPhone.getText()).append("\n");
-        details.append("Email: ").append(txtEmail.getText()).append("\n");
-        details.append("License: ").append(txtLicense.getText()).append("\n");
-        details.append("Start Date: ").append(txtStartDate.getText()).append("\n");
-        details.append("End Date: ").append(txtEndDate.getText()).append("\n");
-        details.append("Amount: ").append(txtAmount.getText()).append("\n");
-        details.append("Status: ").append(txtStatus.getText()).append("\n");
-        details.append("Created By: ").append(txtCreatedBy.getText()).append("\n");
-        
-        // Show the details in a message dialog
-        JOptionPane.showMessageDialog(this, details.toString(), "Rental Details", JOptionPane.INFORMATION_MESSAGE);
-    }
-
-    
-    
-    
-    /**
-     * This method is called from within the constructor to initialize the form.
-     * WARNING: Do NOT modify this code. The content of this method is always
-     * regenerated by the Form Editor.
-     */
-    @SuppressWarnings("unchecked")
-    // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
-    private void initComponents() {
-
-        jPanel1 = new javax.swing.JPanel();
-        jPanel2 = new javax.swing.JPanel();
-        txtSearch = new javax.swing.JTextField();
-        btnSearch = new javax.swing.JButton();
-        cboFilter = new javax.swing.JComboBox<>();
-        jPanel3 = new javax.swing.JPanel();
-        jScrollPane1 = new javax.swing.JScrollPane();
-        tblRentals = new javax.swing.JTable();
-        jPanel4 = new javax.swing.JPanel();
-        btnReturnVehicle = new javax.swing.JButton();
-        btnViewDetails = new javax.swing.JButton();
-
-        jPanel1.setBackground(new java.awt.Color(110, 0, 0));
-        jPanel1.setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
-
-        jPanel2.setBackground(new java.awt.Color(110, 0, 0));
-
-        btnSearch.setText("Search");
-
-        cboFilter.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
-        cboFilter.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                cboFilterActionPerformed(evt);
-            }
-        });
-
-        javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
-        jPanel2.setLayout(jPanel2Layout);
-        jPanel2Layout.setHorizontalGroup(
-            jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel2Layout.createSequentialGroup()
-                .addContainerGap()
-                .addComponent(txtSearch, javax.swing.GroupLayout.PREFERRED_SIZE, 121, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(18, 18, 18)
-                .addComponent(btnSearch)
-                .addGap(27, 27, 27)
-                .addComponent(cboFilter, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(623, Short.MAX_VALUE))
-        );
-        jPanel2Layout.setVerticalGroup(
-            jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel2Layout.createSequentialGroup()
-                .addGap(20, 20, 20)
-                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(txtSearch, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(btnSearch)
-                    .addComponent(cboFilter, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addContainerGap(27, Short.MAX_VALUE))
-        );
-
-        jPanel1.add(jPanel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 0, 920, 70));
-
-        tblRentals.setModel(new javax.swing.table.DefaultTableModel(
-            new Object [][] {
-                {null, null, null, null},
-                {null, null, null, null},
-                {null, null, null, null},
-                {null, null, null, null}
-            },
-            new String [] {
-                "Title 1", "Title 2", "Title 3", "Title 4"
-            }
-        ));
-        jScrollPane1.setViewportView(tblRentals);
-
-        javax.swing.GroupLayout jPanel3Layout = new javax.swing.GroupLayout(jPanel3);
-        jPanel3.setLayout(jPanel3Layout);
-        jPanel3Layout.setHorizontalGroup(
-            jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jScrollPane1, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, 920, Short.MAX_VALUE)
-        );
-        jPanel3Layout.setVerticalGroup(
-            jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 430, Short.MAX_VALUE)
-        );
-
-        jPanel1.add(jPanel3, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 70, 920, 430));
-
-        jPanel4.setBackground(new java.awt.Color(110, 0, 0));
-
-        btnReturnVehicle.setText("RETURN VEHICLE");
-
-        btnViewDetails.setText("VIEW DETAILS");
-
-        javax.swing.GroupLayout jPanel4Layout = new javax.swing.GroupLayout(jPanel4);
-        jPanel4.setLayout(jPanel4Layout);
-        jPanel4Layout.setHorizontalGroup(
-            jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel4Layout.createSequentialGroup()
-                .addGap(18, 18, 18)
-                .addComponent(btnReturnVehicle, javax.swing.GroupLayout.PREFERRED_SIZE, 132, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(37, 37, 37)
-                .addComponent(btnViewDetails, javax.swing.GroupLayout.PREFERRED_SIZE, 129, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(604, Short.MAX_VALUE))
-        );
-        jPanel4Layout.setVerticalGroup(
-            jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel4Layout.createSequentialGroup()
-                .addContainerGap()
-                .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(btnReturnVehicle)
-                    .addComponent(btnViewDetails))
-                .addContainerGap(66, Short.MAX_VALUE))
-        );
-
-        jPanel1.add(jPanel4, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 500, 920, -1));
-
-        getContentPane().add(jPanel1, java.awt.BorderLayout.CENTER);
-
-        pack();
-    }// </editor-fold>//GEN-END:initComponents
-
-    private void cboFilterActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_cboFilterActionPerformed
-        loadRentals(cboFilter.getSelectedItem().toString());
-
-    }//GEN-LAST:event_cboFilterActionPerformed
-
-
-    // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JButton btnReturnVehicle;
-    private javax.swing.JButton btnSearch;
-    private javax.swing.JButton btnViewDetails;
-    private javax.swing.JComboBox<String> cboFilter;
-    private javax.swing.JPanel jPanel1;
-    private javax.swing.JPanel jPanel2;
-    private javax.swing.JPanel jPanel3;
-    private javax.swing.JPanel jPanel4;
-    private javax.swing.JScrollPane jScrollPane1;
-    private javax.swing.JTable tblRentals;
-    private javax.swing.JTextField txtSearch;
-    // End of variables declaration//GEN-END:variables
 }
