@@ -245,47 +245,12 @@ public class employeeDashBoard extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void e_dashActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_e_dashActionPerformed
-         boolean isOpen = false;
-    JInternalFrame[] frames = mainD.getAllFrames();
-    for (JInternalFrame frame : frames) {
-        if (frame instanceof rentals) {
-            frame.moveToFront();
-            try {
-                frame.setSelected(true);
-            } catch (java.beans.PropertyVetoException e) {
-                // Handle exception
-            }
-            isOpen = true;
-            break;
-        }
-    }
-    
-    // If not open, create and show a new instance
-    if (!isOpen) {
-        rentals rentalForm = new rentals();
-        
-        // Get the current username from your dashboard
-        rentalForm.setCurrentUser(currentUsername); // Using the class variable
-        
-        // Add to desktop pane
-        mainD.add(rentalForm);
-        
-        // Center the form in the desktop pane
-        Dimension desktopSize = mainD.getSize();
-        Dimension frameSize = rentalForm.getSize();
-        rentalForm.setLocation(
-            (desktopSize.width - frameSize.width) / 2,
-            (desktopSize.height - frameSize.height) / 2
-        );
-        
-        // Show the form
-        rentalForm.setVisible(true);
-        try {
-            rentalForm.setSelected(true);
-        } catch (java.beans.PropertyVetoException e) {
-            // Handle exception
-        }
-    }
+         mainD.removeAll();
+    rentals rentalsPanel = new rentals();
+    mainD.add(rentalsPanel);
+    rentalsPanel.setVisible(true);
+    mainD.revalidate();
+    mainD.repaint();
     }//GEN-LAST:event_e_dashActionPerformed
 
     private void logoutMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_logoutMouseClicked

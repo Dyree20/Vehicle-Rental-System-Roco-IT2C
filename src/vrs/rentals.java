@@ -673,6 +673,8 @@ public class rentals extends javax.swing.JInternalFrame {
         lblVehicleImage.setIcon(null);
         lblVehicleImage.setText("No Image");
     }
+
+   
     
     // Button renderer for the Actions column
     class ButtonRenderer extends JButton implements TableCellRenderer {

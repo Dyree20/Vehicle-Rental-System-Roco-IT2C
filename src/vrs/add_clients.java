@@ -21,16 +21,21 @@ import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.ImageIcon;
+import javax.swing.JButton;
+import javax.swing.JDialog;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JTextField;
 
 /**
  *
  * @author ROCO
  */
 public class add_clients extends javax.swing.JInternalFrame {
-
+    
+    
+    private javax.swing.JTextField txtClientEmail;
     private int selectedVehicleId = -1;
 private JPanel selectedCardPanel = null;
 private Color originalCardColor = new Color(128, 0, 0); // Dark red background
@@ -56,6 +61,9 @@ private Color selectedCardColor = new Color(200, 100, 0); // Orange-ish highligh
     
     // Load vehicles
     loadVehicleCards();
+    
+    
+    
 }
     
     private void setupComponents() {
@@ -396,157 +404,281 @@ private void cboFilterActionPerformed(java.awt.event.ActionEvent evt) {
     }// </editor-fold>//GEN-END:initComponents
 
     private void btnRentVehicleActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnRentVehicleActionPerformed
-        if (selectedVehicleId == -1) {
-        JOptionPane.showMessageDialog(this, "Please select a vehicle first");
+        
+    if (selectedVehicleId == -1) {
+        JOptionPane.showMessageDialog(this, "Please select a vehicle first.");
         return;
     }
     
-    // Check if the vehicle is available
-    try {
-        Connection con = new dbConnector().getConnection();
-        String query = "SELECT v_status FROM tbl_vehicles WHERE v_id = ?";
-        PreparedStatement pst = con.prepareStatement(query);
-        pst.setInt(1, selectedVehicleId);
-        ResultSet rs = pst.executeQuery();
+    // Create rental dialog
+    JDialog rentalDialog = new JDialog();
+    rentalDialog.setTitle("Rent Vehicle");
+    rentalDialog.setSize(400, 400); // Increased height for date pickers
+    rentalDialog.setLocationRelativeTo(this);
+    rentalDialog.setModal(true);
+    rentalDialog.setLayout(new BorderLayout());
+    
+    // Create rental form panel
+    JPanel formPanel = new JPanel();
+    formPanel.setLayout(new BoxLayout(formPanel, BoxLayout.Y_AXIS));
+    formPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+    
+    // Client name field
+    JPanel namePanel = new JPanel(new BorderLayout(5, 0));
+    namePanel.add(new JLabel("Client Name:"), BorderLayout.WEST);
+    JTextField txtClientName = new JTextField(20);
+    namePanel.add(txtClientName, BorderLayout.CENTER);
+    formPanel.add(namePanel);
+    formPanel.add(Box.createVerticalStrut(10));
+    
+    // Client phone field
+    JPanel phonePanel = new JPanel(new BorderLayout(5, 0));
+    phonePanel.add(new JLabel("Phone Number:"), BorderLayout.WEST);
+    JTextField txtClientPhone = new JTextField(20);
+    phonePanel.add(txtClientPhone, BorderLayout.CENTER);
+    formPanel.add(phonePanel);
+    formPanel.add(Box.createVerticalStrut(10));
+    
+    // Client email field
+    JPanel emailPanel = new JPanel(new BorderLayout(5, 0));
+    emailPanel.add(new JLabel("Email Address:"), BorderLayout.WEST);
+    txtClientEmail = new JTextField(20);
+    emailPanel.add(txtClientEmail, BorderLayout.CENTER);
+    formPanel.add(emailPanel);
+    formPanel.add(Box.createVerticalStrut(10));
+    
+    // Client license field
+    JPanel licensePanel = new JPanel(new BorderLayout(5, 0));
+    licensePanel.add(new JLabel("License Number:"), BorderLayout.WEST);
+    JTextField txtClientLicense = new JTextField(20);
+    licensePanel.add(txtClientLicense, BorderLayout.CENTER);
+    formPanel.add(licensePanel);
+    formPanel.add(Box.createVerticalStrut(10));
+    
+    // Start date field (use JDateChooser from JCalendar library or com.toedter.calendar)
+    JPanel startDatePanel = new JPanel(new BorderLayout(5, 0));
+    startDatePanel.add(new JLabel("Start Date:"), BorderLayout.WEST);
+    
+    // For simplicity, let's use a formatted text field instead of JDateChooser
+    JTextField txtStartDate = new JTextField(20);
+    txtStartDate.setText(new java.text.SimpleDateFormat("yyyy-MM-dd").format(new java.util.Date()));
+    startDatePanel.add(txtStartDate, BorderLayout.CENTER);
+    
+    formPanel.add(startDatePanel);
+    formPanel.add(Box.createVerticalStrut(10));
+    
+    // End date field
+    JPanel endDatePanel = new JPanel(new BorderLayout(5, 0));
+    endDatePanel.add(new JLabel("End Date:"), BorderLayout.WEST);
+    
+    // For simplicity, let's use a formatted text field
+    JTextField txtEndDate = new JTextField(20);
+    // Set default end date to one week later
+    java.util.Calendar cal = java.util.Calendar.getInstance();
+    cal.add(java.util.Calendar.WEEK_OF_YEAR, 1);
+    txtEndDate.setText(new java.text.SimpleDateFormat("yyyy-MM-dd").format(cal.getTime()));
+    
+    endDatePanel.add(txtEndDate, BorderLayout.CENTER);
+    formPanel.add(endDatePanel);
+    formPanel.add(Box.createVerticalStrut(10));
+    
+    // Number of weeks (calculated field)
+    JPanel weeksPanel = new JPanel(new BorderLayout(5, 0));
+    weeksPanel.add(new JLabel("Number of Weeks:"), BorderLayout.WEST);
+    JTextField txtWeeks = new JTextField(20);
+    txtWeeks.setText("1"); // Default 1 week
+    txtWeeks.setEditable(false); // This is calculated
+    weeksPanel.add(txtWeeks, BorderLayout.CENTER);
+    formPanel.add(weeksPanel);
+    formPanel.add(Box.createVerticalStrut(10));
+    
+    // Add listeners to update weeks when dates change
+    txtStartDate.addActionListener(e -> updateWeekCalculation(txtStartDate, txtEndDate, txtWeeks));
+    txtEndDate.addActionListener(e -> updateWeekCalculation(txtStartDate, txtEndDate, txtWeeks));
+    
+    // Buttons panel
+    JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+    JButton rentButton = new JButton("Rent");
+    JButton cancelButton = new JButton("Cancel");
+    
+    rentButton.addActionListener(e -> {
+        String clientName = txtClientName.getText().trim();
+        String clientPhone = txtClientPhone.getText().trim();
+        String clientEmail = txtClientEmail.getText().trim();
+        String clientLicense = txtClientLicense.getText().trim();
+        String startDate = txtStartDate.getText().trim();
+        String endDate = txtEndDate.getText().trim();
         
-        if (rs.next()) {
-            String status = rs.getString("v_status");
-            
-            if (!status.equalsIgnoreCase("available")) {
-                JOptionPane.showMessageDialog(this, "This vehicle is not available for rent");
-                rs.close();
-                pst.close();
-                con.close();
-                return;
-            }
-            
-            // Get client information
-            String clientName = JOptionPane.showInputDialog(this, "Enter client name:");
-            if (clientName == null || clientName.trim().isEmpty()) {
-                rs.close();
-                pst.close();
-                con.close();
-                return; // User cancelled
-            }
-            
-            String clientPhone = JOptionPane.showInputDialog(this, "Enter client phone:");
-            if (clientPhone == null || clientPhone.trim().isEmpty()) {
-                rs.close();
-                pst.close();
-                con.close();
-                return; // User cancelled
-            }
-            
-            String licenseNumber = JOptionPane.showInputDialog(this, "Enter license number:");
-            if (licenseNumber == null || licenseNumber.trim().isEmpty()) {
-                rs.close();
-                pst.close();
-                con.close();
-                return; // User cancelled
-            }
-            
-            // Create new client
-            String insertClientSQL = "INSERT INTO tbl_clients (c_name, c_phone, c_license_number) VALUES (?, ?, ?)";
-            PreparedStatement insertClientStmt = con.prepareStatement(insertClientSQL, Statement.RETURN_GENERATED_KEYS);
-            insertClientStmt.setString(1, clientName);
-            insertClientStmt.setString(2, clientPhone);
-            insertClientStmt.setString(3, licenseNumber);
-            insertClientStmt.executeUpdate();
-            
-            // Get new client ID
-            ResultSet generatedKeys = insertClientStmt.getGeneratedKeys();
-            int clientId = -1;
-            if (generatedKeys.next()) {
-                clientId = generatedKeys.getInt(1);
-            }
-            generatedKeys.close();
-            insertClientStmt.close();
-            
-            if (clientId == -1) {
-                JOptionPane.showMessageDialog(this, "Failed to create client record");
-                rs.close();
-                pst.close();
-                con.close();
-                return;
-            }
-            
-            // Create rental with fixed 7-day period
-            java.util.Date currentDate = new java.util.Date();
-            java.sql.Date startDate = new java.sql.Date(currentDate.getTime());
-            
-            // Calculate end date (7 days later)
-            java.util.Calendar cal = java.util.Calendar.getInstance();
-            cal.setTime(currentDate);
-            cal.add(java.util.Calendar.DATE, 7);
-            java.util.Date utilDate = cal.getTime();
-            java.sql.Date endDate = new java.sql.Date(utilDate.getTime());
-            
-            // Get vehicle rate
-            String rateQuery = "SELECT v_rate FROM tbl_vehicles WHERE v_id = ?";
-            PreparedStatement rateStmt = con.prepareStatement(rateQuery);
-            rateStmt.setInt(1, selectedVehicleId);
-            ResultSet rateRs = rateStmt.executeQuery();
-            
-            double totalAmount = 0;
-            if (rateRs.next()) {
-                totalAmount = rateRs.getDouble("v_rate"); // Weekly rate
-            }
-            
-            rateRs.close();
-            rateStmt.close();
-            
-            // Begin transaction
-            con.setAutoCommit(false);
-            
-            try {
-                // 1. Create rental record
-                String rentalSQL = "INSERT INTO tbl_rentals (r_vehicle_id, r_client_id, r_start_date, r_end_date, r_total_amount) VALUES (?, ?, ?, ?, ?)";
-                PreparedStatement rentalStmt = con.prepareStatement(rentalSQL);
-                rentalStmt.setInt(1, selectedVehicleId);
-                rentalStmt.setInt(2, clientId);
-                rentalStmt.setDate(3, startDate);
-                rentalStmt.setDate(4, endDate);
-                rentalStmt.setDouble(5, totalAmount);
-                rentalStmt.executeUpdate();
-                rentalStmt.close();
-                
-                // 2. Update vehicle status
-                String updateSQL = "UPDATE tbl_vehicles SET v_status = 'rented' WHERE v_id = ?";
-                PreparedStatement updateStmt = con.prepareStatement(updateSQL);
-                updateStmt.setInt(1, selectedVehicleId);
-                updateStmt.executeUpdate();
-                updateStmt.close();
-                
-                // Commit transaction
-                con.commit();
-                
-                JOptionPane.showMessageDialog(this, 
-                    "Vehicle rented successfully!\n" +
-                    "Client: " + clientName + "\n" +
-                    "Start Date: " + startDate + "\n" +
-                    "End Date: " + endDate + "\n" +
-                    "Total Amount: $" + totalAmount);
-                
-                // Refresh vehicle list
-                loadVehicleCards();
-                resetSelection();
-                
-            } catch (SQLException e) {
-                // Rollback transaction on error
-                try {
-                    con.rollback();
-                } catch (SQLException ex) {
-                    ex.printStackTrace();
-                }
-                JOptionPane.showMessageDialog(this, "Error creating rental: " + e.getMessage());
-            }
+        // Validate inputs
+        if (clientName.isEmpty() || clientPhone.isEmpty() || clientEmail.isEmpty() || 
+            clientLicense.isEmpty() || startDate.isEmpty() || endDate.isEmpty()) {
+            JOptionPane.showMessageDialog(rentalDialog, "Please fill in all fields.");
+            return;
         }
         
+        // Email validation
+        if (!clientEmail.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,6}$")) {
+            JOptionPane.showMessageDialog(rentalDialog, "Please enter a valid email address.");
+            return;
+        }
+        
+        // Date validation
+        java.text.SimpleDateFormat dateFormat = new java.text.SimpleDateFormat("yyyy-MM-dd");
+        dateFormat.setLenient(false);
+        try {
+            java.util.Date start = dateFormat.parse(startDate);
+            java.util.Date end = dateFormat.parse(endDate);
+            
+            if (end.before(start)) {
+                JOptionPane.showMessageDialog(rentalDialog, "End date cannot be before start date.");
+                return;
+            }
+        } catch (java.text.ParseException ex) {
+            JOptionPane.showMessageDialog(rentalDialog, "Please enter valid dates in yyyy-MM-dd format.");
+            return;
+        }
+        
+        // Process rental with custom start and end dates
+        if (processRentalWithCustomDates(selectedVehicleId, clientName, clientPhone, clientEmail, clientLicense, startDate, endDate)) {
+            rentalDialog.dispose();
+            loadVehicleCards(); // Refresh vehicle list
+            resetSelection();   // Reset vehicle selection
+        }
+    });
+    
+    cancelButton.addActionListener(e -> rentalDialog.dispose());
+    
+    buttonPanel.add(rentButton);
+    buttonPanel.add(cancelButton);
+    
+    rentalDialog.add(formPanel, BorderLayout.CENTER);
+    rentalDialog.add(buttonPanel, BorderLayout.SOUTH);
+    rentalDialog.setVisible(true);
+}
+// Method to update weeks calculation when dates change
+private void updateWeekCalculation(JTextField startDateField, JTextField endDateField, JTextField weeksField) {
+    try {
+        java.text.SimpleDateFormat dateFormat = new java.text.SimpleDateFormat("yyyy-MM-dd");
+        java.util.Date startDate = dateFormat.parse(startDateField.getText());
+        java.util.Date endDate = dateFormat.parse(endDateField.getText());
+        
+        // Calculate difference in milliseconds
+        long diffInMillies = Math.abs(endDate.getTime() - startDate.getTime());
+        // Convert to days
+        long diffInDays = java.util.concurrent.TimeUnit.DAYS.convert(diffInMillies, java.util.concurrent.TimeUnit.MILLISECONDS);
+        // Calculate weeks (rounded up)
+        int weeks = (int) Math.ceil(diffInDays / 7.0);
+        
+        weeksField.setText(String.valueOf(weeks));
+    } catch (java.text.ParseException ex) {
+        weeksField.setText("Error");
+    }
+}
+// Modified process rental method with custom dates
+private boolean processRentalWithCustomDates(int vehicleId, String name, String phone, String email, String license, String startDate, String endDate) {
+    try {
+        Connection con = new dbConnector().getConnection();
+        con.setAutoCommit(false); // Start transaction
+        
+        // Insert client if new, or get existing client ID
+        String clientQuery = "INSERT INTO tbl_clients (c_name, c_phone, c_email, c_license) VALUES (?, ?, ?, ?) " +
+                           "ON DUPLICATE KEY UPDATE c_phone=?, c_email=?, c_license=?";
+        
+        PreparedStatement clientStmt = con.prepareStatement(clientQuery, Statement.RETURN_GENERATED_KEYS);
+        clientStmt.setString(1, name);
+        clientStmt.setString(2, phone);
+        clientStmt.setString(3, email);
+        clientStmt.setString(4, license);
+        clientStmt.setString(5, phone);
+        clientStmt.setString(6, email);
+        clientStmt.setString(7, license);
+        clientStmt.executeUpdate();
+        
+        // Get client ID
+        int clientId;
+        ResultSet rs = clientStmt.getGeneratedKeys();
+        if (rs.next()) {
+            clientId = rs.getInt(1);
+        } else {
+            // Get client ID if already exists
+            String getClientQuery = "SELECT c_id FROM tbl_clients WHERE c_name = ? AND c_phone = ?";
+            PreparedStatement getClientStmt = con.prepareStatement(getClientQuery);
+            getClientStmt.setString(1, name);
+            getClientStmt.setString(2, phone);
+            ResultSet clientRs = getClientStmt.executeQuery();
+            
+            if (clientRs.next()) {
+                clientId = clientRs.getInt("c_id");
+                clientRs.close();
+                getClientStmt.close();
+            } else {
+                throw new SQLException("Could not get client ID");
+            }
+        }
         rs.close();
-        pst.close();
+        clientStmt.close();
+        
+        // Get vehicle rate
+        String rateQuery = "SELECT v_rate FROM tbl_vehicles WHERE v_id = ?";
+        PreparedStatement rateStmt = con.prepareStatement(rateQuery);
+        rateStmt.setInt(1, vehicleId);
+        ResultSet rateRs = rateStmt.executeQuery();
+        
+        double rate = 0;
+        if (rateRs.next()) {
+            rate = rateRs.getDouble("v_rate");
+        }
+        rateRs.close();
+        rateStmt.close();
+        
+        // Calculate weeks and total amount
+        java.text.SimpleDateFormat dateFormat = new java.text.SimpleDateFormat("yyyy-MM-dd");
+        java.util.Date start = dateFormat.parse(startDate);
+        java.util.Date end = dateFormat.parse(endDate);
+        
+        // Calculate difference in milliseconds
+        long diffInMillies = Math.abs(end.getTime() - start.getTime());
+        // Convert to days
+        long diffInDays = java.util.concurrent.TimeUnit.DAYS.convert(diffInMillies, java.util.concurrent.TimeUnit.MILLISECONDS);
+        // Calculate weeks (rounded up)
+        int weeks = (int) Math.ceil(diffInDays / 7.0);
+        
+        // Calculate total amount (weekly rate * number of weeks)
+        double totalAmount = rate * weeks;
+        
+        // Create rental record with custom dates
+        String rentalQuery = "INSERT INTO tbl_rentals (r_vehicle_id, r_client_id, r_start_date, r_end_date, " +
+                           "r_amount, r_status, r_created_by) VALUES " +
+                           "(?, ?, ?, ?, ?, 'active', ?)";
+        
+        PreparedStatement rentalStmt = con.prepareStatement(rentalQuery);
+        rentalStmt.setInt(1, vehicleId);
+        rentalStmt.setInt(2, clientId);
+        rentalStmt.setString(3, startDate); // Use the provided start date
+        rentalStmt.setString(4, endDate);   // Use the provided end date
+        rentalStmt.setDouble(5, totalAmount);
+        rentalStmt.setString(6, "system"); // Replace with actual user if available
+        
+        rentalStmt.executeUpdate();
+        rentalStmt.close();
+        
+        // Update vehicle status
+        String updateQuery = "UPDATE tbl_vehicles SET v_status = 'rented' WHERE v_id = ?";
+        PreparedStatement updateStmt = con.prepareStatement(updateQuery);
+        updateStmt.setInt(1, vehicleId);
+        updateStmt.executeUpdate();
+        updateStmt.close();
+        
+        con.commit();
         con.close();
-    } catch (SQLException e) {
-        JOptionPane.showMessageDialog(this, "Error: " + e.getMessage());
+        
+        JOptionPane.showMessageDialog(this, "Vehicle rented successfully for " + weeks + " weeks!\nTotal Amount: $" + totalAmount);
+        return true;
+        
+    } catch (SQLException | java.text.ParseException ex) {
+        JOptionPane.showMessageDialog(this, "Error processing rental: " + ex.getMessage(), 
+                "Database Error", JOptionPane.ERROR_MESSAGE);
+        return false;
     }
     }//GEN-LAST:event_btnRentVehicleActionPerformed
 
