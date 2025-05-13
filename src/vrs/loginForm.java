@@ -16,6 +16,9 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import javax.swing.JOptionPane;
+import config.Logger;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 
 public class loginForm extends javax.swing.JFrame {
 
@@ -38,53 +41,53 @@ forgot_pass.addMouseListener(new java.awt.event.MouseAdapter() {
     System.out.println("Login attempt for user: " + username);
     System.out.println("Plain text password entered: " + password);
     System.out.println("Hashed password calculated: " + hashPassword(password));
-    
     String sql = "SELECT u_id, u_role, u_password, u_status FROM tbl_users WHERE LOWER(u_username) = LOWER(?)";
-    
+    String userIp = null;
+    try {
+        userIp = InetAddress.getLocalHost().getHostAddress();
+    } catch (UnknownHostException e) {
+        userIp = "Unknown";
+    }
     try (Connection con = DriverManager.getConnection("jdbc:mysql://localhost:3306/vrs", "root", "");
          PreparedStatement pst = con.prepareStatement(sql)) {
-        
         pst.setString(1, username);
         ResultSet rs = pst.executeQuery();
-        
         if (rs.next()) {
-            // Fetch stored credentials
             int userId = rs.getInt("u_id");
             String role = rs.getString("u_role");
             String storedPassword = rs.getString("u_password");
             String status = rs.getString("u_status");
-
             System.out.println("🔹 User Found: " + username);
             System.out.println("🔹 User ID: " + userId);
             System.out.println("🔹 User Role: " + role);
             System.out.println("🔹 Stored Password (from DB): " + storedPassword);
             System.out.println("🔹 Password Length: " + storedPassword.length());
             System.out.println("🔹 User Status: " + status);
-
-            // Check if account is pending approval
             if (status.equalsIgnoreCase("Pending")) {
+                Logger.logLogin(username, false, userIp);
                 JOptionPane.showMessageDialog(null, "Your account is pending approval. Please wait for admin approval.");
                 return null;
             }
-
-            // Check password
             if (checkPassword(password, storedPassword)) {
                 System.out.println("✅ Password Matched! Login Successful.");
-                return role;  // ✅ Return only the user role
+                Logger.logLogin(username, true, userIp);
+                return role;
             } else {
                 System.out.println("❌ Password Mismatch! Login Failed.");
+                Logger.logLogin(username, false, userIp);
                 JOptionPane.showMessageDialog(null, "Incorrect password. Please try again.");
             }
         } else {
             System.out.println("❌ No user found with username: " + username);
+            Logger.logLogin(username, false, userIp);
             JOptionPane.showMessageDialog(null, "User not found.");
         }
     } catch (SQLException e) {
         System.out.println("❌ Database error: " + e.getMessage());
+        Logger.logLogin(username, false, userIp);
         JOptionPane.showMessageDialog(null, "Database connection error.");
     }
     return null;
-
 }
 private String hashPassword(String password) {
     try {

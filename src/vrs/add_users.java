@@ -15,6 +15,9 @@ import java.sql.SQLException;
 import javax.swing.JOptionPane;
 import javax.swing.plaf.basic.BasicInternalFrameUI;
 import javax.swing.table.DefaultTableModel;
+import config.Logger;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 /**
  *
  * @author ROCO
@@ -201,6 +204,10 @@ add.addActionListener(e -> addOrUpdateUser());
                 "Confirm Delete", JOptionPane.YES_NO_OPTION);
         
         if (confirm == JOptionPane.YES_OPTION) {
+            String userIp = "Unknown";
+            try { userIp = InetAddress.getLocalHost().getHostAddress(); } catch (UnknownHostException e) {}
+            String adminUser = System.getProperty("user.name");
+            String deletedUsername = (String) jTable1.getValueAt(jTable1.getSelectedRow(), 2);
             try {
                 Connection conn = new dbConnector().getConnection();
                 String query = "DELETE FROM tbl_users WHERE u_id = ?";
@@ -209,6 +216,7 @@ add.addActionListener(e -> addOrUpdateUser());
                 
                 int result = pst.executeUpdate();
                 if (result > 0) {
+                    Logger.log("Delete User", "Deleted user: " + deletedUsername, adminUser, userIp);
                     JOptionPane.showMessageDialog(this, "User deleted successfully!");
                     resetForm();
                     loadUsers();
@@ -233,7 +241,10 @@ add.addActionListener(e -> addOrUpdateUser());
         
         String currentStatus = (String) jTable1.getValueAt(jTable1.getSelectedRow(), 6);
         String newStatus = currentStatus.equals("Active") ? "Inactive" : "Active";
-        
+        String userIp = "Unknown";
+        try { userIp = InetAddress.getLocalHost().getHostAddress(); } catch (UnknownHostException e) {}
+        String adminUser = System.getProperty("user.name");
+        String toggledUsername = (String) jTable1.getValueAt(jTable1.getSelectedRow(), 2);
         try {
             Connection conn = new dbConnector().getConnection();
             String query = "UPDATE tbl_users SET u_status = ? WHERE u_id = ?";
@@ -243,6 +254,7 @@ add.addActionListener(e -> addOrUpdateUser());
             
             int result = pst.executeUpdate();
             if (result > 0) {
+                Logger.log("Toggle User Status", "User: " + toggledUsername + " status changed to: " + newStatus, adminUser, userIp);
                 JOptionPane.showMessageDialog(this, "User status updated to: " + newStatus);
                 loadUsers();
             } else {
@@ -291,7 +303,9 @@ add.addActionListener(e -> addOrUpdateUser());
         String password = new String(pass.getPassword());
         String phoneText = phone.getText();
         String roleText = (String) role.getSelectedItem();
-        
+        String userIp = "Unknown";
+        try { userIp = InetAddress.getLocalHost().getHostAddress(); } catch (UnknownHostException e) {}
+        String adminUser = System.getProperty("user.name");
         try {
             Connection conn = new dbConnector().getConnection();
             
@@ -307,7 +321,10 @@ add.addActionListener(e -> addOrUpdateUser());
                 pst.setString(6, roleText);
                 pst.setString(7, "Active");
                 
-                pst.executeUpdate();
+                int result = pst.executeUpdate();
+                if (result > 0) {
+                    Logger.log("Add User", "Added user: " + user, adminUser, userIp);
+                }
                 JOptionPane.showMessageDialog(this, "User added successfully!");
             } else {
                 // Update existing user
@@ -337,7 +354,10 @@ add.addActionListener(e -> addOrUpdateUser());
                     pst.setInt(7, selectedUserId);
                 }
                 
-                pst.executeUpdate();
+                int result = pst.executeUpdate();
+                if (result > 0) {
+                    Logger.log("Update User", "Updated user: " + user, adminUser, userIp);
+                }
                 JOptionPane.showMessageDialog(this, "User updated successfully!");
             }
             

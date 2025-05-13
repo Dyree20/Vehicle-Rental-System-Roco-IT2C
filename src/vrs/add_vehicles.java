@@ -6,6 +6,7 @@
 package vrs;
 
 import config.dbConnector;
+import config.Logger;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
@@ -13,8 +14,11 @@ import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.Graphics2D;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
 import java.awt.GridLayout;
 import java.awt.Image;
+import java.awt.Insets;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -22,6 +26,8 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -77,11 +83,28 @@ public class add_vehicles extends javax.swing.JInternalFrame {
     // Add some space between cards
     vehicleListPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
     
+    // Add ActionListener to mv_type to filter vehicles
+    mv_type.addActionListener(e -> loadVehiclesFromDB());
+    
+    // Add ActionListener to btnSearch to filter vehicles
+    btnSearch.addActionListener(e -> loadVehiclesFromDB());
+    
+    // Restore button appearance
+    add.setBackground(new java.awt.Color(153, 0, 0));
+    add.setForeground(Color.WHITE);
+    add.setOpaque(true);
+    add.setBorderPainted(false);
+    edit.setBackground(new java.awt.Color(153, 0, 0));
+    edit.setForeground(Color.WHITE);
+    edit.setOpaque(true);
+    edit.setBorderPainted(false);
+    delete.setBackground(new java.awt.Color(153, 0, 0));
+    delete.setForeground(Color.WHITE);
+    delete.setOpaque(true);
+    delete.setBorderPainted(false);
+    
     // Load vehicles from database
     loadVehiclesFromDB();
-    
-    
-    
 }
     public void addVehicleCard(String name, String type, String price, byte[] imageData) {
     JPanel card = new JPanel();
@@ -113,9 +136,18 @@ public class add_vehicles extends javax.swing.JInternalFrame {
     JPanel infoPanel = new JPanel();
     infoPanel.setLayout(new BoxLayout(infoPanel, BoxLayout.Y_AXIS));
     infoPanel.setBackground(new java.awt.Color(153, 0, 0));
-    infoPanel.add(new javax.swing.JLabel("Name: " + name));
-    infoPanel.add(new javax.swing.JLabel("Type: " + type));
-    infoPanel.add(new javax.swing.JLabel("Price: " + price));
+    JLabel nameLabel = new JLabel("Name: " + name);
+    nameLabel.setForeground(Color.WHITE);
+    nameLabel.setFont(new Font("Arial", Font.PLAIN, 14));
+    JLabel typeLabel = new JLabel("Type: " + type);
+    typeLabel.setForeground(Color.WHITE);
+    typeLabel.setFont(new Font("Arial", Font.PLAIN, 14));
+    JLabel priceLabel = new JLabel("Price: " + price);
+    priceLabel.setForeground(Color.WHITE);
+    priceLabel.setFont(new Font("Arial", Font.PLAIN, 14));
+    infoPanel.add(nameLabel);
+    infoPanel.add(typeLabel);
+    infoPanel.add(priceLabel);
     card.add(infoPanel);
 
     // Mouse click listener to select card
@@ -187,11 +219,11 @@ public void addVehicleCard(String name, String type, String price, String imageP
     nameLabel.setFont(new Font("Arial", Font.BOLD, 14));
     
     JLabel typeLabel = new JLabel("Type: " + type);
-    typeLabel.setForeground(Color.WHITE);
+    typeLabel.setForeground(new Color(220, 220, 220));
     typeLabel.setFont(new Font("Arial", Font.PLAIN, 14));
     
     JLabel priceLabel = new JLabel("Price: " + price);
-    priceLabel.setForeground(Color.WHITE);
+    priceLabel.setForeground(new Color(200, 255, 200));
     priceLabel.setFont(new Font("Arial", Font.PLAIN, 14));
     
     // Add components to info panel with spacing
@@ -222,12 +254,12 @@ public void addVehicleCard(String name, String type, String price, String imageP
     vehicleListPanel.revalidate();
     vehicleListPanel.repaint();
 }
-    private boolean addVehicleToDB(String make, String model, String year, String plate, String rate, String status, File imageFile) {
+    private boolean addVehicleToDB(String make, String model, String year, String plate, String rate, String status, String vType, File imageFile) {
     try {
         Connection conn = new dbConnector().getConnection();
         
         // Prepare the statement with all fields
-        String query = "INSERT INTO tbl_vehicles (v_make, v_model, v_year, v_plate, v_rate, v_status, v_image) VALUES (?, ?, ?, ?, ?, ?, ?)";
+        String query = "INSERT INTO tbl_vehicles (v_make, v_model, v_year, v_plate, v_rate, v_status, v_type, v_image) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
         PreparedStatement pst = conn.prepareStatement(query);
         pst.setString(1, make);
         pst.setString(2, model);
@@ -235,6 +267,7 @@ public void addVehicleCard(String name, String type, String price, String imageP
         pst.setString(4, plate);
         pst.setString(5, rate);
         pst.setString(6, status);
+        pst.setString(7, vType);
         
         // Handle image file - resize it first
         if (imageFile != null && imageFile.exists()) {
@@ -287,20 +320,26 @@ public void addVehicleCard(String name, String type, String price, String imageP
                 System.out.println("Compressed image size: " + imageBytes.length + " bytes");
                 
                 // Set the compressed image bytes
-                pst.setBytes(7, imageBytes);
+                pst.setBytes(8, imageBytes);
             } catch (Exception e) {
                 System.out.println("Error processing image: " + e.getMessage());
                 e.printStackTrace();
-                pst.setNull(7, java.sql.Types.BLOB);
+                pst.setNull(8, java.sql.Types.BLOB);
             }
         } else {
-            pst.setNull(7, java.sql.Types.BLOB);
+            pst.setNull(8, java.sql.Types.BLOB);
         }
         
         int result = pst.executeUpdate();
         pst.close();
         conn.close();
         
+        if (result > 0) {
+            String userIp = "Unknown";
+            try { userIp = InetAddress.getLocalHost().getHostAddress(); } catch (UnknownHostException e) {}
+            String username = System.getProperty("user.name"); // Replace with actual username if available
+            Logger.log("Add Vehicle", make + " " + model + " (" + year + ", " + plate + ") added.", username, userIp);
+        }
         return result > 0;
     } catch (Exception ex) {
         JOptionPane.showMessageDialog(null, "Error: " + ex.getMessage(), "Database Error", JOptionPane.ERROR_MESSAGE);
@@ -312,38 +351,51 @@ public void addVehicleCard(String name, String type, String price, String imageP
     try {
         // Clear the current list
         vehicleListPanel.removeAll();
-        
         Connection conn = new dbConnector().getConnection();
-        String query = "SELECT * FROM tbl_vehicles";
-        PreparedStatement pst = conn.prepareStatement(query);
+        String selectedType = mv_type.getSelectedItem() != null ? mv_type.getSelectedItem().toString() : "All";
+        String searchText = txtSearch.getText().trim();
+        StringBuilder query = new StringBuilder("SELECT * FROM tbl_vehicles");
+        boolean hasType = !selectedType.equals("All");
+        boolean hasSearch = !searchText.isEmpty();
+        if (hasType || hasSearch) {
+            query.append(" WHERE ");
+            if (hasType) {
+                query.append("v_type = ?");
+            }
+            if (hasSearch) {
+                if (hasType) query.append(" AND ");
+                query.append("(LOWER(v_make) LIKE ? OR LOWER(v_model) LIKE ?)");
+            }
+        }
+        PreparedStatement pst = conn.prepareStatement(query.toString());
+        int paramIndex = 1;
+        if (hasType) {
+            pst.setString(paramIndex++, selectedType);
+        }
+        if (hasSearch) {
+            String likeText = "%" + searchText.toLowerCase() + "%";
+            pst.setString(paramIndex++, likeText);
+            pst.setString(paramIndex++, likeText);
+        }
         ResultSet rs = pst.executeQuery();
-        
         while (rs.next()) {
             String make = rs.getString("v_make");
             String model = rs.getString("v_model");
             String year = rs.getString("v_year");
             String plate = rs.getString("v_plate");
             String rate = rs.getString("v_rate");
-            
-            // Create card name and descriptions
+            String vType = rs.getString("v_type");
             String cardName = make + " " + model;
-            String cardType = "Year: " + year + ", Plate: " + plate;
+            String cardType = vType + " | Year: " + year + ", Plate: " + plate;
             String cardPrice = "₱" + rate + " per day";
-            
-            // Get image data directly from BLOB
             byte[] imageData = rs.getBytes("v_image");
-            
-            // Add to UI with image data
             addVehicleCard(cardName, cardType, cardPrice, imageData);
         }
-        
         rs.close();
         pst.close();
         conn.close();
-        
         vehicleListPanel.revalidate();
         vehicleListPanel.repaint();
-        
     } catch (Exception ex) {
         JOptionPane.showMessageDialog(this, "Error loading vehicles: " + ex.getMessage(), "Database Error", JOptionPane.ERROR_MESSAGE);
     }
@@ -367,6 +419,12 @@ public void addVehicleCard(String name, String type, String price, String imageP
             pst.close();
             conn.close();
             
+            if (rowsDeleted > 0) {
+                String userIp = "Unknown";
+                try { userIp = InetAddress.getLocalHost().getHostAddress(); } catch (UnknownHostException e) {}
+                String username = System.getProperty("user.name"); // Replace with actual username if available
+                Logger.log("Delete Vehicle", make + " " + model + " deleted.", username, userIp);
+            }
             // Return true if at least one row was deleted
             return rowsDeleted > 0;
         } catch (SQLException ex) {
@@ -392,16 +450,20 @@ public void addVehicleCard(String name, String type, String price, String imageP
         add = new javax.swing.JButton();
         edit = new javax.swing.JButton();
         delete = new javax.swing.JButton();
+        btnSearch = new javax.swing.JButton();
+        txtSearch = new javax.swing.JTextField(12);
+        mv_type = new javax.swing.JComboBox<>(new String[] { "All", "Motorcycle", "AUV", "SUV" });
         jScrollPane2 = new javax.swing.JScrollPane();
         vehicleListPanel = new javax.swing.JPanel();
 
         jPanel1.setBackground(new java.awt.Color(102, 0, 0));
-        jPanel1.setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
+        jPanel1.setLayout(new java.awt.BorderLayout());
 
         jPanel2.setBackground(new java.awt.Color(204, 51, 0));
+        jPanel2.setLayout(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT, 18, 30));
 
         add.setBackground(new java.awt.Color(153, 153, 153));
-        add.setFont(new java.awt.Font("Malgun Gothic", 1, 12)); // NOI18N
+        add.setFont(new java.awt.Font("Malgun Gothic", 1, 12));
         add.setText("ADD");
         add.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -410,7 +472,7 @@ public void addVehicleCard(String name, String type, String price, String imageP
         });
 
         edit.setBackground(new java.awt.Color(204, 204, 204));
-        edit.setFont(new java.awt.Font("Malgun Gothic", 1, 12)); // NOI18N
+        edit.setFont(new java.awt.Font("Malgun Gothic", 1, 12));
         edit.setText("EDIT");
         edit.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -418,7 +480,7 @@ public void addVehicleCard(String name, String type, String price, String imageP
             }
         });
 
-        delete.setFont(new java.awt.Font("Malgun Gothic", 1, 12)); // NOI18N
+        delete.setFont(new java.awt.Font("Malgun Gothic", 1, 12));
         delete.setText("DELETE");
         delete.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -426,53 +488,35 @@ public void addVehicleCard(String name, String type, String price, String imageP
             }
         });
 
-        javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
-        jPanel2.setLayout(jPanel2Layout);
-        jPanel2Layout.setHorizontalGroup(
-            jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel2Layout.createSequentialGroup()
-                .addGap(38, 38, 38)
-                .addComponent(add, javax.swing.GroupLayout.PREFERRED_SIZE, 110, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(18, 18, 18)
-                .addComponent(edit, javax.swing.GroupLayout.PREFERRED_SIZE, 110, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(18, 18, 18)
-                .addComponent(delete, javax.swing.GroupLayout.PREFERRED_SIZE, 110, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(516, Short.MAX_VALUE))
-        );
-        jPanel2Layout.setVerticalGroup(
-            jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel2Layout.createSequentialGroup()
-                .addContainerGap(29, Short.MAX_VALUE)
-                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(add, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(edit, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(delete, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGap(30, 30, 30))
-        );
-
-        jPanel1.add(jPanel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 500, 920, 100));
+        btnSearch.setText("Search");
+        // Add controls to jPanel2
+        jPanel2.add(add);
+        jPanel2.add(edit);
+        jPanel2.add(delete);
+        jPanel2.add(txtSearch);
+        jPanel2.add(btnSearch);
+        jPanel2.add(mv_type);
 
         jScrollPane2.setBackground(new java.awt.Color(102, 0, 0));
         jScrollPane2.setVerifyInputWhenFocusTarget(false);
-
         vehicleListPanel.setBackground(new java.awt.Color(102, 0, 0));
         vehicleListPanel.setPreferredSize(new java.awt.Dimension(900, 2000));
         vehicleListPanel.setLayout(new javax.swing.BoxLayout(vehicleListPanel, javax.swing.BoxLayout.Y_AXIS));
         jScrollPane2.setViewportView(vehicleListPanel);
 
-        jPanel1.add(jScrollPane2, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 0, 920, 500));
+        jPanel1.add(jScrollPane2, java.awt.BorderLayout.CENTER);
+        jPanel1.add(jPanel2, java.awt.BorderLayout.SOUTH);
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jPanel1, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addComponent(jPanel1, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
         );
-
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
@@ -480,40 +524,60 @@ public void addVehicleCard(String name, String type, String price, String imageP
         // Create a dialog for vehicle information input
     JDialog dialog = new JDialog();
     dialog.setTitle("Add New Vehicle");
-    dialog.setSize(500, 450);
+    dialog.setSize(400, 420);
     dialog.setLocationRelativeTo(this);
     dialog.setLayout(new BorderLayout());
     
     JPanel panel = new JPanel();
-    panel.setLayout(new GridLayout(7, 2, 10, 10));
-    panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
-    
-    // Add components to the panel
-    JLabel makeLabel = new JLabel("Make:");
+    panel.setLayout(new GridBagLayout());
+    GridBagConstraints gbc = new GridBagConstraints();
+    gbc.insets = new Insets(5, 10, 5, 10);
+    gbc.anchor = GridBagConstraints.WEST;
+    gbc.fill = GridBagConstraints.HORIZONTAL;
+    gbc.gridx = 0; gbc.gridy = 0;
+    panel.add(new JLabel("Make:"), gbc);
+    gbc.gridx = 1;
     JTextField makeField = new JTextField(20);
-    
-    JLabel modelLabel = new JLabel("Model:");
+    panel.add(makeField, gbc);
+    gbc.gridx = 0; gbc.gridy++;
+    panel.add(new JLabel("Model:"), gbc);
+    gbc.gridx = 1;
     JTextField modelField = new JTextField(20);
-    
-    JLabel yearLabel = new JLabel("Year:");
+    panel.add(modelField, gbc);
+    gbc.gridx = 0; gbc.gridy++;
+    panel.add(new JLabel("Year:"), gbc);
+    gbc.gridx = 1;
     JTextField yearField = new JTextField(20);
-    
-    JLabel plateLabel = new JLabel("Plate Number:");
+    panel.add(yearField, gbc);
+    gbc.gridx = 0; gbc.gridy++;
+    panel.add(new JLabel("Plate Number:"), gbc);
+    gbc.gridx = 1;
     JTextField plateField = new JTextField(20);
-    
-    JLabel rateLabel = new JLabel("Rate per Day (PHP):");
+    panel.add(plateField, gbc);
+    gbc.gridx = 0; gbc.gridy++;
+    panel.add(new JLabel("Rate per Day (PHP):"), gbc);
+    gbc.gridx = 1;
     JTextField rateField = new JTextField(20);
-    
-    JLabel statusLabel = new JLabel("Status:");
+    panel.add(rateField, gbc);
+    gbc.gridx = 0; gbc.gridy++;
+    panel.add(new JLabel("Status:"), gbc);
+    gbc.gridx = 1;
     JComboBox<String> statusCombo = new JComboBox<>(new String[]{"Available", "Rented", "Maintenance"});
-    
-    JLabel imageLabel = new JLabel("Vehicle Image:");
-    JTextField imageField = new JTextField(20);
+    panel.add(statusCombo, gbc);
+    gbc.gridx = 0; gbc.gridy++;
+    panel.add(new JLabel("MV Type:"), gbc);
+    gbc.gridx = 1;
+    JComboBox<String> mvTypeCombo = new JComboBox<>(new String[]{"Motorcycle", "Truck", "AUV", "SUV"});
+    panel.add(mvTypeCombo, gbc);
+    gbc.gridx = 0; gbc.gridy++;
+    panel.add(new JLabel("Vehicle Image:"), gbc);
+    gbc.gridx = 1;
+    JTextField imageField = new JTextField(22);
     JButton browseButton = new JButton("Browse...");
-    
-    JPanel imagePanel = new JPanel(new BorderLayout());
+    JPanel imagePanel = new JPanel(new BorderLayout(5, 0));
     imagePanel.add(imageField, BorderLayout.CENTER);
     imagePanel.add(browseButton, BorderLayout.EAST);
+    panel.add(imagePanel, gbc);
     
     // File reference for the selected image
     final File[] selectedImageFile = {null};
@@ -529,20 +593,7 @@ public void addVehicleCard(String name, String type, String price, String imageP
         }
     });
     
-    panel.add(makeLabel);
-    panel.add(makeField);
-    panel.add(modelLabel);
-    panel.add(modelField);
-    panel.add(yearLabel);
-    panel.add(yearField);
-    panel.add(plateLabel);
-    panel.add(plateField);
-    panel.add(rateLabel);
-    panel.add(rateField);
-    panel.add(statusLabel);
-    panel.add(statusCombo);
-    panel.add(imageLabel);
-    panel.add(imagePanel);
+    dialog.add(panel, BorderLayout.CENTER);
     
     // Add save button
     JButton saveButton = new JButton("Save");
@@ -559,6 +610,7 @@ public void addVehicleCard(String name, String type, String price, String imageP
         String plate = plateField.getText().trim();
         String rate = rateField.getText().trim();
         String status = statusCombo.getSelectedItem().toString();
+        String vType = mvTypeCombo.getSelectedItem().toString();
         
         // Validate inputs
         if (make.isEmpty() || model.isEmpty() || year.isEmpty() || plate.isEmpty() || rate.isEmpty()) {
@@ -587,7 +639,7 @@ public void addVehicleCard(String name, String type, String price, String imageP
         }
         
         // Add to database
-        if (addVehicleToDB(make, model, year, plate, rate, status, selectedImageFile[0])) {
+        if (addVehicleToDB(make, model, year, plate, rate, status, vType, selectedImageFile[0])) {
             JOptionPane.showMessageDialog(dialog, "Vehicle added successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
             
             // Create a description for the vehicle card
@@ -612,20 +664,19 @@ public void addVehicleCard(String name, String type, String price, String imageP
     
     cancelButton.addActionListener(e -> dialog.dispose());
     
-    dialog.add(panel, BorderLayout.CENTER);
     dialog.add(buttonPanel, BorderLayout.SOUTH);
     dialog.setVisible(true);
 
     }//GEN-LAST:event_addActionPerformed
 
-    private void editActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_editActionPerformed
+    private void editActionPerformed(java.awt.event.ActionEvent evt) {                                     
         if (selectedCard == null) {
             JOptionPane.showMessageDialog(this, "Please select a vehicle to edit.", "No Selection", JOptionPane.WARNING_MESSAGE);
             return;
         }
         
         // Get vehicle information from the selected card
-        final String[] vehicleInfo = {"", "", "", "", "", ""}; // make, model, year, plate, rate, status
+        final String[] vehicleInfo = {"", "", "", "", "", "", ""}; // make, model, year, plate, rate, status, type
         
         // Find JLabels in the selected card to extract information
         Component[] components = selectedCard.getComponents();
@@ -647,6 +698,9 @@ public void addVehicleCard(String name, String type, String price, String imageP
                             } else if (text.startsWith("Type:")) {
                                 String typeInfo = text.substring(6).trim();
                                 String[] parts = typeInfo.split(", ");
+                                // The first part is the type
+                                String[] typeParts = parts[0].split(" ");
+                                vehicleInfo[6] = typeParts[0]; // type
                                 for (String part : parts) {
                                     if (part.startsWith("Year:")) {
                                         vehicleInfo[2] = part.substring(6).trim();
@@ -674,7 +728,7 @@ public void addVehicleCard(String name, String type, String price, String imageP
         dialog.setLayout(new BorderLayout());
         
         JPanel panel = new JPanel();
-        panel.setLayout(new GridLayout(7, 2, 10, 10));
+        panel.setLayout(new GridLayout(8, 2, 10, 10));
         panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
         
         // Add components to the panel
@@ -696,6 +750,10 @@ public void addVehicleCard(String name, String type, String price, String imageP
         JLabel statusLabel = new JLabel("Status:");
         JComboBox<String> statusCombo = new JComboBox<>(new String[]{"Available", "Rented", "Maintenance"});
         statusCombo.setSelectedItem(vehicleInfo[5]);
+        
+        JLabel typeLabel = new JLabel("Type:");
+        JComboBox<String> typeCombo = new JComboBox<>(new String[]{"Motorcycle", "AUV", "SUV"});
+        typeCombo.setSelectedItem(vehicleInfo[6]);
         
         JLabel imageLabel = new JLabel("Vehicle Image:");
         JTextField imageField = new JTextField(20);
@@ -731,6 +789,8 @@ public void addVehicleCard(String name, String type, String price, String imageP
         panel.add(rateField);
         panel.add(statusLabel);
         panel.add(statusCombo);
+        panel.add(typeLabel);
+        panel.add(typeCombo);
         panel.add(imageLabel);
         panel.add(imagePanel);
         
@@ -749,6 +809,7 @@ public void addVehicleCard(String name, String type, String price, String imageP
             String newPlate = plateField.getText().trim();
             String newRate = rateField.getText().trim();
             String newStatus = statusCombo.getSelectedItem().toString();
+            String newType = typeCombo.getSelectedItem().toString();
             
             // Validate inputs
             if (newMake.isEmpty() || newModel.isEmpty() || newYear.isEmpty() || newPlate.isEmpty() || newRate.isEmpty()) {
@@ -777,7 +838,7 @@ public void addVehicleCard(String name, String type, String price, String imageP
             }
             
             // Update in database
-            if (updateVehicleInDB(vehicleInfo[0], vehicleInfo[1], newMake, newModel, newYear, newPlate, newRate, newStatus, selectedImageFile[0])) {
+            if (updateVehicleInDB(vehicleInfo[0], vehicleInfo[1], newMake, newModel, newYear, newPlate, newRate, newStatus, newType, selectedImageFile[0])) {
                 // Remove old card and add new one
                 vehicleListPanel.remove(selectedCard);
                 selectedCard = null;
@@ -797,12 +858,12 @@ public void addVehicleCard(String name, String type, String price, String imageP
     }
     
     private boolean updateVehicleInDB(String oldMake, String oldModel, String newMake, String newModel, 
-                                    String year, String plate, String rate, String status, File imageFile) {
+                                    String year, String plate, String rate, String status, String vType, File imageFile) {
         try {
             Connection conn = new dbConnector().getConnection();
             
             // Prepare the statement with all fields
-            String query = "UPDATE tbl_vehicles SET v_make=?, v_model=?, v_year=?, v_plate=?, v_rate=?, v_status=?, v_image=? WHERE v_make=? AND v_model=?";
+            String query = "UPDATE tbl_vehicles SET v_make=?, v_model=?, v_year=?, v_plate=?, v_rate=?, v_status=?, v_type=?, v_image=? WHERE v_make=? AND v_model=?";
             PreparedStatement pst = conn.prepareStatement(query);
             pst.setString(1, newMake);
             pst.setString(2, newModel);
@@ -810,27 +871,32 @@ public void addVehicleCard(String name, String type, String price, String imageP
             pst.setString(4, plate);
             pst.setString(5, rate);
             pst.setString(6, status);
-            
+            pst.setString(7, vType);
             // Handle image file if provided
             if (imageFile != null) {
                 try {
                     InputStream is = new FileInputStream(imageFile);
-                    pst.setBlob(7, is);
+                    pst.setBlob(8, is);
                 } catch (Exception e) {
                     JOptionPane.showMessageDialog(this, "Error with image file: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
                     return false;
                 }
             } else {
-                pst.setNull(7, java.sql.Types.BLOB);
+                pst.setNull(8, java.sql.Types.BLOB);
             }
-            
-            pst.setString(8, oldMake);
-            pst.setString(9, oldModel);
+            pst.setString(9, oldMake);
+            pst.setString(10, oldModel);
             
             int result = pst.executeUpdate();
             pst.close();
             conn.close();
             
+            if (result > 0) {
+                String userIp = "Unknown";
+                try { userIp = InetAddress.getLocalHost().getHostAddress(); } catch (UnknownHostException e) {}
+                String username = System.getProperty("user.name"); // Replace with actual username if available
+                Logger.log("Update Vehicle", oldMake + " " + oldModel + " updated to " + newMake + " " + newModel + ", " + year + ", " + plate, username, userIp);
+            }
             return result > 0;
         } catch (SQLException ex) {
             JOptionPane.showMessageDialog(this, "Database Error: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
@@ -906,6 +972,9 @@ public void addVehicleCard(String name, String type, String price, String imageP
     private javax.swing.JButton add;
     private javax.swing.JButton delete;
     private javax.swing.JButton edit;
+    private javax.swing.JButton btnSearch;
+    private javax.swing.JTextField txtSearch;
+    private javax.swing.JComboBox<String> mv_type;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel2;
     private javax.swing.JScrollPane jScrollPane2;

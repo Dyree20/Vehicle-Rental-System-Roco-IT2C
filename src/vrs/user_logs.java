@@ -6,10 +6,13 @@
 package vrs;
 
 import config.dbConnector;
+import config.Logger;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -46,6 +49,7 @@ private javax.swing.JLabel jLabel4;
         };
         
         // Add data to the model
+        int rowCount = 0;
         while (rs.next()) {
             model.addRow(new Object[]{
                 rs.getInt("log_id"),
@@ -55,16 +59,24 @@ private javax.swing.JLabel jLabel4;
                 rs.getTimestamp("log_timestamp"),
                 rs.getString("log_ip")
             });
+            rowCount++;
         }
         
         // Set the model to the table
         logTable.setModel(model);
+        jScrollPane1.setViewportView(logTable);
+        logTable.revalidate();
+        logTable.repaint();
+        // Add a visible border to the scroll pane
+        jScrollPane1.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(110, 0, 0), 2));
+        System.out.println("Table model set and refreshed.");
         
         // Close resources
         rs.close();
         pst.close();
         con.close();
     } catch (SQLException ex) {
+        ex.printStackTrace();
         JOptionPane.showMessageDialog(this, "Error loading logs: " + ex.getMessage(), 
                 "Database Error", JOptionPane.ERROR_MESSAGE);
     }
@@ -109,37 +121,37 @@ private void setupPanels() {
 private void populateFilters() {
     try {
         Connection con = new dbConnector().getConnection();
-        
+        // Save current selections
+        String currentAction = (String) cboAction.getSelectedItem();
+        String currentUser = (String) cboUser.getSelectedItem();
         // Populate action filter
         cboAction.removeAllItems();
         cboAction.addItem("All Actions");
-        
         String actionQuery = "SELECT DISTINCT log_action FROM tbl_user_logs ORDER BY log_action";
         PreparedStatement actionStmt = con.prepareStatement(actionQuery);
         ResultSet actionRs = actionStmt.executeQuery();
-        
         while (actionRs.next()) {
             String action = actionRs.getString("log_action");
             if (action != null && !action.isEmpty()) {
                 cboAction.addItem(action);
             }
         }
-        
+        // Restore previous selection if possible
+        if (currentAction != null) cboAction.setSelectedItem(currentAction);
         // Populate user filter
         cboUser.removeAllItems();
         cboUser.addItem("All Users");
-        
         String userQuery = "SELECT DISTINCT log_user FROM tbl_user_logs ORDER BY log_user";
         PreparedStatement userStmt = con.prepareStatement(userQuery);
         ResultSet userRs = userStmt.executeQuery();
-        
         while (userRs.next()) {
             String user = userRs.getString("log_user");
             if (user != null && !user.isEmpty()) {
                 cboUser.addItem(user);
             }
         }
-        
+        // Restore previous selection if possible
+        if (currentUser != null) cboUser.setSelectedItem(currentUser);
         // Close resources
         actionRs.close();
         actionStmt.close();
@@ -156,7 +168,13 @@ private void btnSearchActionPerformed(java.awt.event.ActionEvent evt) {
     String searchText = txtSearch.getText().trim();
     String actionFilter = cboAction.getSelectedItem().toString();
     String userFilter = cboUser.getSelectedItem().toString();
-    
+    // Log search action
+    try {
+        String userIp = "Unknown";
+        try { userIp = java.net.InetAddress.getLocalHost().getHostAddress(); } catch (java.net.UnknownHostException e) {}
+        String username = System.getProperty("user.name");
+        Logger.log("SEARCH LOGS", "Search: '" + searchText + "', Action: '" + actionFilter + "', User: '" + userFilter + "'", username, userIp);
+    } catch (Exception e) { e.printStackTrace(); }
     // Build query with filters
     StringBuilder queryBuilder = new StringBuilder("SELECT * FROM tbl_user_logs WHERE 1=1");
     
@@ -222,6 +240,9 @@ private void btnSearchActionPerformed(java.awt.event.ActionEvent evt) {
         
         // Set the model to the table
         logTable.setModel(model);
+        jScrollPane1.setViewportView(logTable);
+        logTable.revalidate();
+        logTable.repaint();
         
         // Close resources
         rs.close();
@@ -237,25 +258,39 @@ private void btnClearActionPerformed(java.awt.event.ActionEvent evt) {
     cboAction.setSelectedItem("All Actions");
     cboUser.setSelectedItem("All Users");
     loadLogs();
+    // Log clear action
+    try {
+        String userIp = "Unknown";
+        try { userIp = java.net.InetAddress.getLocalHost().getHostAddress(); } catch (java.net.UnknownHostException e) {}
+        String username = System.getProperty("user.name");
+        Logger.log("CLEAR LOG FILTERS", "Cleared search and filters", username, userIp);
+    } catch (Exception e) { e.printStackTrace(); }
 }
 private void btnRefreshActionPerformed(java.awt.event.ActionEvent evt) {
     loadLogs();
     populateFilters();
+    // Log refresh action
+    try {
+        String userIp = "Unknown";
+        try { userIp = java.net.InetAddress.getLocalHost().getHostAddress(); } catch (java.net.UnknownHostException e) {}
+        String username = System.getProperty("user.name");
+        Logger.log("REFRESH LOGS", "Logs refreshed", username, userIp);
+    } catch (Exception e) { e.printStackTrace(); }
 }
 private void btnExportActionPerformed(java.awt.event.ActionEvent evt) {
-    JFileChooser fileChooser = new JFileChooser();
+    javax.swing.JFileChooser fileChooser = new javax.swing.JFileChooser();
     fileChooser.setDialogTitle("Export Logs");
     
-    if (fileChooser.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
-        File file = fileChooser.getSelectedFile();
+    if (fileChooser.showSaveDialog(this) == javax.swing.JFileChooser.APPROVE_OPTION) {
+        java.io.File file = fileChooser.getSelectedFile();
         
         // Add .csv extension if needed
         if (!file.getName().toLowerCase().endsWith(".csv")) {
-            file = new File(file.getAbsolutePath() + ".csv");
+            file = new java.io.File(file.getAbsolutePath() + ".csv");
         }
         
-        try (FileWriter fw = new FileWriter(file);
-             BufferedWriter bw = new BufferedWriter(fw)) {
+        try (java.io.FileWriter fw = new java.io.FileWriter(file);
+             java.io.BufferedWriter bw = new java.io.BufferedWriter(fw)) {
             
             // Write header
             bw.write("Log ID,Action,Details,User,Timestamp,IP Address");
@@ -286,26 +321,122 @@ private void btnExportActionPerformed(java.awt.event.ActionEvent evt) {
                 bw.newLine();
             }
             
-            JOptionPane.showMessageDialog(this, "Logs exported successfully to: " + file.getAbsolutePath(), 
-                    "Export Complete", JOptionPane.INFORMATION_MESSAGE);
+            javax.swing.JOptionPane.showMessageDialog(this, "Logs exported successfully to: " + file.getAbsolutePath(), 
+                    "Export Complete", javax.swing.JOptionPane.INFORMATION_MESSAGE);
+            // Log export action
+            try {
+                String userIp = "Unknown";
+                try { userIp = java.net.InetAddress.getLocalHost().getHostAddress(); } catch (java.net.UnknownHostException e) {}
+                String username = System.getProperty("user.name");
+                Logger.log("EXPORT LOGS", "Logs exported to: " + file.getAbsolutePath(), username, userIp);
+            } catch (Exception e) { e.printStackTrace(); }
             
-        } catch (IOException ex) {
-            JOptionPane.showMessageDialog(this, "Error exporting logs: " + ex.getMessage(), 
-                    "Export Error", JOptionPane.ERROR_MESSAGE);
+        } catch (java.io.IOException ex) {
+            javax.swing.JOptionPane.showMessageDialog(this, "Error exporting logs: " + ex.getMessage(), 
+                    "Export Error", javax.swing.JOptionPane.ERROR_MESSAGE);
         }
     }
 }
 // Make sure to call these methods in your constructor after initComponents()
 public user_logs() {
     initComponents();
-    
     jLabel1 = new javax.swing.JLabel();
     jLabel2 = new javax.swing.JLabel();
     jLabel3 = new javax.swing.JLabel();
     jLabel4 = new javax.swing.JLabel();
-    
     setupPanels();
+    cboAction.setSelectedItem("All Actions");
+    cboUser.setSelectedItem("All Users");
+    txtSearch.setText("");
+    System.out.println("user_logs constructor: filters set to ALL, loading logs...");
     loadLogs();
+    // Remove border for internal frame
+    this.setBorder(javax.swing.BorderFactory.createEmptyBorder(0,0,0,0));
+    javax.swing.plaf.basic.BasicInternalFrameUI bi = (javax.swing.plaf.basic.BasicInternalFrameUI)this.getUI();
+    bi.setNorthPane(null);
+    // Log user logs panel opened
+    try {
+        String userIp = "Unknown";
+        try { userIp = java.net.InetAddress.getLocalHost().getHostAddress(); } catch (java.net.UnknownHostException e) {}
+        String username = System.getProperty("user.name");
+        Logger.log("VIEW USER LOGS", "User logs panel opened", username, userIp);
+    } catch (Exception e) { e.printStackTrace(); }
+    // Add action listeners for buttons
+    btnSearch.addActionListener(e -> btnSearchActionPerformed(null));
+    btnClear.addActionListener(e -> btnClearActionPerformed(null));
+    btnRefresh.addActionListener(e -> { btnRefreshActionPerformed(null); populateFilters(); });
+    btnExport.addActionListener(e -> btnExportActionPerformed(null));
+    // Add action listeners for combo boxes to filter logs immediately
+    cboAction.addActionListener(e -> filterLogsByComboBoxes());
+    cboUser.addActionListener(e -> filterLogsByComboBoxes());
+}
+
+private void filterLogsByComboBoxes() {
+    String searchText = txtSearch.getText().trim();
+    String actionFilter = cboAction.getSelectedItem().toString();
+    String userFilter = cboUser.getSelectedItem().toString();
+    // Build query with filters
+    StringBuilder queryBuilder = new StringBuilder("SELECT * FROM tbl_user_logs WHERE 1=1");
+    if (!searchText.isEmpty()) {
+        queryBuilder.append(" AND (log_action LIKE ? OR log_details LIKE ? OR log_user LIKE ?)");
+    }
+    if (!actionFilter.equals("All Actions")) {
+        queryBuilder.append(" AND log_action = ?");
+    }
+    if (!userFilter.equals("All Users")) {
+        queryBuilder.append(" AND log_user = ?");
+    }
+    queryBuilder.append(" ORDER BY log_timestamp DESC");
+    try {
+        Connection con = new dbConnector().getConnection();
+        PreparedStatement pst = con.prepareStatement(queryBuilder.toString());
+        int paramIndex = 1;
+        if (!searchText.isEmpty()) {
+            String searchPattern = "%" + searchText + "%";
+            pst.setString(paramIndex++, searchPattern);
+            pst.setString(paramIndex++, searchPattern);
+            pst.setString(paramIndex++, searchPattern);
+        }
+        if (!actionFilter.equals("All Actions")) {
+            pst.setString(paramIndex++, actionFilter);
+        }
+        if (!userFilter.equals("All Users")) {
+            pst.setString(paramIndex++, userFilter);
+        }
+        ResultSet rs = pst.executeQuery();
+        // Create table model with same structure as loadLogs()
+        javax.swing.table.DefaultTableModel model = new javax.swing.table.DefaultTableModel(
+            new Object [][] {},
+            new String [] {"Log ID", "Action", "Details", "User", "Timestamp", "IP Address"}
+        ) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        };
+        // Add data to the model
+        while (rs.next()) {
+            model.addRow(new Object[]{
+                rs.getInt("log_id"),
+                rs.getString("log_action"),
+                rs.getString("log_details"),
+                rs.getString("log_user"),
+                rs.getTimestamp("log_timestamp"),
+                rs.getString("log_ip")
+            });
+        }
+        // Set the model to the table
+        logTable.setModel(model);
+        jScrollPane1.setViewportView(logTable);
+        logTable.revalidate();
+        logTable.repaint();
+        // Close resources
+        rs.close();
+        pst.close();
+        con.close();
+    } catch (SQLException ex) {
+        javax.swing.JOptionPane.showMessageDialog(this, "Error filtering logs: " + ex.getMessage(), "Database Error", javax.swing.JOptionPane.ERROR_MESSAGE);
+    }
 }
 
     /**
@@ -331,22 +462,11 @@ public user_logs() {
         btnRefresh = new javax.swing.JButton();
         btnExport = new javax.swing.JButton();
 
-        getContentPane().setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
+        getContentPane().setLayout(new java.awt.BorderLayout());
 
+        // Top panel (jPanel1)
         jPanel1.setBackground(new java.awt.Color(110, 0, 50));
-
-        jLabel1.setFont(new java.awt.Font("Microsoft YaHei", 3, 24)); // NOI18N
-        jLabel1.setForeground(new java.awt.Color(255, 255, 255));
-        jLabel1.setText("USER ACTIVITY LOGS");
-
-        btnSearch.setText("Search");
-
-        cboAction.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
-
-        btnClear.setText("Clear");
-
-        cboUser.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
-
+        // Use GroupLayout for jPanel1 as before
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
         jPanel1Layout.setHorizontalGroup(
@@ -382,24 +502,10 @@ public user_logs() {
                     .addComponent(cboUser, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addContainerGap())
         );
+        getContentPane().add(jPanel1, java.awt.BorderLayout.NORTH);
 
-        getContentPane().add(jPanel1, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 0, 918, -1));
-
+        // Middle panel (jPanel2)
         jPanel2.setBackground(new java.awt.Color(110, 0, 0));
-
-        logTable.setModel(new javax.swing.table.DefaultTableModel(
-            new Object [][] {
-                {null, null, null, null},
-                {null, null, null, null},
-                {null, null, null, null},
-                {null, null, null, null}
-            },
-            new String [] {
-                "Title 1", "Title 2", "Title 3", "Title 4"
-            }
-        ));
-        jScrollPane1.setViewportView(logTable);
-
         javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
         jPanel2.setLayout(jPanel2Layout);
         jPanel2Layout.setHorizontalGroup(
@@ -413,15 +519,10 @@ public user_logs() {
                 .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 379, Short.MAX_VALUE)
                 .addContainerGap())
         );
+        getContentPane().add(jPanel2, java.awt.BorderLayout.CENTER);
 
-        getContentPane().add(jPanel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 100, 920, 410));
-
+        // Bottom panel (jPanel3)
         jPanel3.setBackground(new java.awt.Color(110, 50, 0));
-
-        btnRefresh.setText("Refresh");
-
-        btnExport.setText("Export");
-
         javax.swing.GroupLayout jPanel3Layout = new javax.swing.GroupLayout(jPanel3);
         jPanel3.setLayout(jPanel3Layout);
         jPanel3Layout.setHorizontalGroup(
@@ -442,9 +543,7 @@ public user_logs() {
                     .addComponent(btnExport))
                 .addContainerGap(66, Short.MAX_VALUE))
         );
-
-        getContentPane().add(jPanel3, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 510, 920, -1));
-
+        getContentPane().add(jPanel3, java.awt.BorderLayout.SOUTH);
         pack();
     }// </editor-fold>//GEN-END:initComponents
 

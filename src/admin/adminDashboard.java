@@ -21,9 +21,10 @@ import java.beans.PropertyVetoException;
 import javax.swing.border.EmptyBorder;
 import javax.swing.ImageIcon;
 import javax.swing.JOptionPane;
-import org.netbeans.lib.awtextra.AbsoluteLayout;
-import org.netbeans.lib.awtextra.AbsoluteConstraints;
 import vrs.user_logs;
+import config.Logger;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 
 /**
  *
@@ -43,6 +44,8 @@ public class adminDashboard extends javax.swing.JFrame {
      */
     public adminDashboard() {
         initComponents();
+        mhome.setOpaque(false);
+        mhome.setBackground(new Color(0,0,0,0));
        
         
         a_users.addActionListener(new java.awt.event.ActionListener() {
@@ -60,24 +63,26 @@ public class adminDashboard extends javax.swing.JFrame {
     }
     
     private void resetButtonColors() {
-        // Set all background colors to the standard dark red
-        dashboard.setBackground(new Color(110, 0, 0));
-        vehicles_dash.setBackground(new Color(110, 0, 0));
-        p_approval.setBackground(new Color(110, 0, 0));
-        a_users.setBackground(new Color(110, 0, 0));
-        reset_requests.setBackground(new Color(110, 0, 0));
-        logs.setBackground(new Color(110, 0, 0));
-        
-        // Reset all text colors to light gray
-        dashboard.setForeground(Color.LIGHT_GRAY);
-        vehicles_dash.setForeground(Color.LIGHT_GRAY);
-        p_approval.setForeground(Color.LIGHT_GRAY);
-        a_users.setForeground(Color.LIGHT_GRAY);
-        reset_requests.setForeground(Color.LIGHT_GRAY);
-        logs.setForeground(Color.LIGHT_GRAY);
+        javax.swing.JButton[] buttons = {
+            dashboard, vehicles_dash, p_approval, 
+            a_users, reset_requests, logs
+        };
+        for (javax.swing.JButton button : buttons) {
+            button.setOpaque(true);
+            button.setContentAreaFilled(true);
+            button.setBackground(null);      // Default NetBeans background
+            button.setForeground(null);      // Default text color
+            button.setBorder(javax.swing.UIManager.getBorder("Button.border")); // Default border
+        }
     }
     
 private void a_usersActionPerformed(java.awt.event.ActionEvent evt) {
+    String userIp = "Unknown";
+    try { userIp = InetAddress.getLocalHost().getHostAddress(); } catch (UnknownHostException e) {}
+    Logger.log("Button Click", "Admin clicked: Users", currentUsername, userIp);
+    resetButtonColors();
+    a_users.setBackground(new Color(110, 0, 0));
+    a_users.setForeground(Color.WHITE);
     mhome.removeAll();
     add_users usersPanel = new add_users();
     mhome.add(usersPanel);
@@ -231,14 +236,14 @@ public void setUsername(String username) {
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
         jPanel1.setBackground(new java.awt.Color(255, 51, 51));
-        jPanel1.setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
+        jPanel1.setLayout(new java.awt.BorderLayout());
 
         jPanel3.setBackground(new java.awt.Color(255, 153, 51));
-        jPanel3.setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
+        jPanel3.setLayout(new java.awt.BorderLayout());
 
         jLabel1.setFont(new java.awt.Font("Tahoma", 3, 36)); // NOI18N
         jLabel1.setText("ADMIN PANEL");
-        jPanel3.add(jLabel1, new org.netbeans.lib.awtextra.AbsoluteConstraints(160, 0, 504, 85));
+        jPanel3.add(jLabel1, java.awt.BorderLayout.CENTER);
 
         logout.setText("LOGOUT");
         logout.addMouseListener(new java.awt.event.MouseAdapter() {
@@ -251,13 +256,13 @@ public void setUsername(String username) {
                 logoutActionPerformed(evt);
             }
         });
-        jPanel3.add(logout, new org.netbeans.lib.awtextra.AbsoluteConstraints(960, 10, 120, 40));
+        jPanel3.add(logout, java.awt.BorderLayout.EAST);
 
-        jPanel1.add(jPanel3, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 0, 1090, -1));
+        jPanel1.add(jPanel3, java.awt.BorderLayout.NORTH);
 
         jLabel2.setIcon(new javax.swing.ImageIcon(getClass().getResource("/images/download-removebg-preview.png"))); // NOI18N
         jLabel2.setText("jLabel2");
-        jPanel1.add(jLabel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(370, 230, 450, 280));
+        jPanel1.add(jLabel2, java.awt.BorderLayout.CENTER);
 
         jPanel2.setBackground(new java.awt.Color(255, 153, 0));
 
@@ -379,22 +384,8 @@ public void setUsername(String username) {
                 .addContainerGap())
         );
 
-        jPanel1.add(jPanel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 80, 150, 640));
-
-        mhome.setBackground(new java.awt.Color(255, 51, 51));
-
-        javax.swing.GroupLayout mhomeLayout = new javax.swing.GroupLayout(mhome);
-        mhome.setLayout(mhomeLayout);
-        mhomeLayout.setHorizontalGroup(
-            mhomeLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 933, Short.MAX_VALUE)
-        );
-        mhomeLayout.setVerticalGroup(
-            mhomeLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 630, Short.MAX_VALUE)
-        );
-
-        jPanel1.add(mhome, new org.netbeans.lib.awtextra.AbsoluteConstraints(150, 89, 933, 630));
+        jPanel1.add(jPanel2, java.awt.BorderLayout.WEST);
+        jPanel1.add(mhome, java.awt.BorderLayout.CENTER);
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
@@ -412,48 +403,25 @@ public void setUsername(String username) {
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
-    private void vehicles_dashActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_vehicles_dashActionPerformed
-         // Clear and properly dispose all internal frames first
-    
-     showInternalFrame(new add_vehicles());
-    // Create new vehicles form
-    add_vehicles vehiclesPanel = new add_vehicles();
-    
-    // Set properties
-    vehiclesPanel.setVisible(true);
-    vehiclesPanel.setMaximizable(true);
-    vehiclesPanel.setIconifiable(true);
-    vehiclesPanel.setClosable(true);
-    
-    // Add to desktop pane
-    mhome.add(vehiclesPanel);
-    
-    // Try to center and select the frame
-    try {
-        vehiclesPanel.setSelected(true);
-        
-        // Center the frame
-        Dimension desktopSize = mhome.getSize();
-        Dimension frameSize = vehiclesPanel.getSize();
-        vehiclesPanel.setLocation(
-            (desktopSize.width - frameSize.width) / 2,
-            (desktopSize.height - frameSize.height) / 2
-        );
-    } catch (PropertyVetoException ex) {
-        System.err.println("Error setting focus to vehicles frame: " + ex.getMessage());
+    private void vehicles_dashActionPerformed(java.awt.event.ActionEvent evt) {
+        String userIp = "Unknown";
+        try { userIp = InetAddress.getLocalHost().getHostAddress(); } catch (UnknownHostException e) {}
+        Logger.log("Button Click", "Admin clicked: Vehicles", currentUsername, userIp);
+        resetButtonColors();
+        vehicles_dash.setBackground(new Color(110, 0, 0));
+        vehicles_dash.setForeground(Color.WHITE);
+        showInternalFrame(new add_vehicles());
     }
 
-        
-    }//GEN-LAST:event_vehicles_dashActionPerformed
-
-    private void dashboardActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_dashboardActionPerformed
-       mhome.removeAll();
-    home homePanel = new home();
-    mhome.add(homePanel);
-    homePanel.setVisible(true);
-    mhome.revalidate();
-    mhome.repaint();
-    }//GEN-LAST:event_dashboardActionPerformed
+    private void dashboardActionPerformed(java.awt.event.ActionEvent evt) {
+        String userIp = "Unknown";
+        try { userIp = InetAddress.getLocalHost().getHostAddress(); } catch (UnknownHostException e) {}
+        Logger.log("Button Click", "Admin clicked: Dashboard", currentUsername, userIp);
+        resetButtonColors();
+        dashboard.setBackground(new Color(110, 0, 0));
+        dashboard.setForeground(Color.WHITE);
+        showInternalFrame(new home());
+    }
 
     private void dashboardMouseEntered(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_dashboardMouseEntered
         // TODO add your handling code here:
@@ -463,31 +431,25 @@ public void setUsername(String username) {
         
     }//GEN-LAST:event_p_approvalMouseClicked
 
-    private void p_approvalActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_p_approvalActionPerformed
-           
+    private void p_approvalActionPerformed(java.awt.event.ActionEvent evt) {
+        String userIp = "Unknown";
+        try { userIp = InetAddress.getLocalHost().getHostAddress(); } catch (UnknownHostException e) {}
+        Logger.log("Button Click", "Admin clicked: Approval", currentUsername, userIp);
+        resetButtonColors();
+        p_approval.setBackground(new Color(110, 0, 0));
+        p_approval.setForeground(Color.WHITE);
         showInternalFrame(new Approval());
-        
-        for (java.awt.Component comp : mhome.getComponents()) {
-        if (comp instanceof Approval) {
-            comp.setVisible(true);
-            ((Approval) comp).toFront();
-            return; // Exit method if it's already open
-        }
     }
 
-    Approval u_app = new Approval();
-    mhome.add(u_app);
-    u_app.setVisible(true);
-
-
-    }//GEN-LAST:event_p_approvalActionPerformed
-
     private void logoutMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_logoutMouseClicked
-    this.dispose();
-    loginForm log = new loginForm();
-    log.setVisible(true);
-    log.setLocationRelativeTo(null);
-    }//GEN-LAST:event_logoutMouseClicked
+        String userIp = "Unknown";
+        try { userIp = InetAddress.getLocalHost().getHostAddress(); } catch (UnknownHostException e) {}
+        Logger.logLogout(currentUsername, userIp);
+        this.dispose();
+        loginForm log = new loginForm();
+        log.setVisible(true);
+        log.setLocationRelativeTo(null);
+    }
 
     private void logoutActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_logoutActionPerformed
         // TODO add your handling code here:
@@ -497,79 +459,24 @@ public void setUsername(String username) {
         // TODO add your handling code here:
     }//GEN-LAST:event_a_usersMouseClicked
 
-    private void logsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_logsActionPerformed
-        
+    private void logsActionPerformed(java.awt.event.ActionEvent evt) {
+        String userIp = "Unknown";
+        try { userIp = InetAddress.getLocalHost().getHostAddress(); } catch (UnknownHostException e) {}
+        Logger.log("Button Click", "Admin clicked: Logs", currentUsername, userIp);
+        resetButtonColors();
+        logs.setBackground(new Color(110, 0, 0));
+        logs.setForeground(Color.WHITE);
         showInternalFrame(new user_logs());
-        
-        try {
-        // 1. Close any existing internal frames first
-        javax.swing.JInternalFrame[] frames = mhome.getAllFrames();
-        for (javax.swing.JInternalFrame frame : frames) {
-            frame.setClosed(true);
-            frame.dispose();
-        }
-        
-        // 2. Remove all components from desktop pane
-        mhome.removeAll();
-        
-        // 3. Create a new user_logs form
-        user_logs logsFrame = new user_logs();
-        
-        // 4. Set frame properties
-        logsFrame.setVisible(true);
-        logsFrame.setMaximizable(true);
-        logsFrame.setIconifiable(true);
-        logsFrame.setClosable(true);
-        
-        // 5. Adjust frame size to fit the desktop pane
-        Dimension desktopSize = mhome.getSize();
-        logsFrame.setSize(desktopSize.width, desktopSize.height);
-        
-        // 6. Add frame to desktop pane
-        mhome.add(logsFrame);
-        
-        // 7. Set focus to the new frame
-        try {
-            logsFrame.setSelected(true);
-        } catch (PropertyVetoException ex) {
-            System.err.println("Error setting focus to logs frame: " + ex.getMessage());
-        }
-        
-        // 8. Update UI
-        mhome.repaint();
-        mhome.revalidate();
-        
-    } catch (Exception e) {
-        JOptionPane.showMessageDialog(this, "Error loading logs view: " + e.getMessage());
     }
 
-    
-    }//GEN-LAST:event_logsActionPerformed
-
     private void reset_requestsActionPerformed(java.awt.event.ActionEvent evt) {
-        // Hide all other frames
-        for (java.awt.Component comp : mhome.getComponents()) {
-            comp.setVisible(false);
-        }
-
-        // Check if passwordResetRequests frame is already open
-        for (java.awt.Component comp : mhome.getComponents()) {
-            if (comp instanceof passwordResetRequests) {
-                comp.setVisible(true);
-                ((passwordResetRequests) comp).toFront();
-                return;
-            }
-        }
-
-        // Create new passwordResetRequests frame
-        passwordResetRequests requests = new passwordResetRequests();
-        mhome.add(requests);
-        requests.setVisible(true);
-        try {
-            requests.setSelected(true);
-        } catch (java.beans.PropertyVetoException e) {
-            e.printStackTrace();
-        }
+        String userIp = "Unknown";
+        try { userIp = InetAddress.getLocalHost().getHostAddress(); } catch (UnknownHostException e) {}
+        Logger.log("Button Click", "Admin clicked: Reset Requests", currentUsername, userIp);
+        resetButtonColors();
+        reset_requests.setBackground(new Color(110, 0, 0));
+        reset_requests.setForeground(Color.WHITE);
+        showInternalFrame(new passwordResetRequests());
     }
 
     

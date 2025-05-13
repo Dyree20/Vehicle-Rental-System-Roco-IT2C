@@ -13,6 +13,9 @@ import javax.swing.plaf.basic.BasicInternalFrameUI;
 import net.proteanit.sql.DbUtils;
 import java.sql.SQLException;
 import javax.swing.JOptionPane;
+import config.Logger;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 
 /**
  *
@@ -26,10 +29,22 @@ public class Approval extends javax.swing.JInternalFrame {
     public Approval() {
         initComponents();
         displayData();
-        
         this.setBorder(javax.swing.BorderFactory.createEmptyBorder(0, 0, 0, 0));
-        BasicInternalFrameUI bi = (BasicInternalFrameUI) this.getUI();
+        javax.swing.plaf.basic.BasicInternalFrameUI bi = (javax.swing.plaf.basic.BasicInternalFrameUI) this.getUI();
         bi.setNorthPane(null);
+        // Resize to parent desktop pane if available
+        if (getParent() != null && getParent() instanceof javax.swing.JDesktopPane) {
+            javax.swing.JDesktopPane parent = (javax.swing.JDesktopPane) getParent();
+            this.setSize(parent.getSize());
+            this.setLocation(0, 0);
+        }
+        // Log approval panel opened
+        try {
+            String userIp = "Unknown";
+            try { userIp = InetAddress.getLocalHost().getHostAddress(); } catch (UnknownHostException e) {}
+            String username = System.getProperty("user.name");
+            Logger.log("VIEW APPROVAL", "Approval panel opened", username, userIp);
+        } catch (Exception e) { e.printStackTrace(); }
     }
 private String selectedUserId = null;
     // Load data from `tbl_approval` into the table
@@ -93,6 +108,13 @@ private void approveUser() {
                                 
                                 conn.commit(); // Commit transaction
                                 JOptionPane.showMessageDialog(this, "User approved successfully!");
+                                // Log approval
+                                try {
+                                    String userIp = "Unknown";
+                                    try { userIp = InetAddress.getLocalHost().getHostAddress(); } catch (UnknownHostException e) {}
+                                    String username = System.getProperty("user.name");
+                                    Logger.log("APPROVE USER", "Approved user ID: " + selectedUserId, username, userIp);
+                                } catch (Exception e) { e.printStackTrace(); }
                                 displayData(); // Refresh the table
                                 selectedUserId = null; // Reset selection
                             }
@@ -134,6 +156,13 @@ private void approveUser() {
 
             if (updateStmt.executeUpdate() > 0) {
                 JOptionPane.showMessageDialog(this, "User updated successfully.");
+                // Log edit
+                try {
+                    String userIp = "Unknown";
+                    try { userIp = InetAddress.getLocalHost().getHostAddress(); } catch (UnknownHostException e) {}
+                    String username = System.getProperty("user.name");
+                    Logger.log("EDIT USER", "Edited user ID: " + selectedUserId, username, userIp);
+                } catch (Exception e) { e.printStackTrace(); }
                 displayData();
                 selectedUserId = null;
             } else {
@@ -162,6 +191,13 @@ private void approveUser() {
 
             if (deleteStmt.executeUpdate() > 0) {
                 JOptionPane.showMessageDialog(this, "User deleted successfully.");
+                // Log delete
+                try {
+                    String userIp = "Unknown";
+                    try { userIp = InetAddress.getLocalHost().getHostAddress(); } catch (UnknownHostException e) {}
+                    String username = System.getProperty("user.name");
+                    Logger.log("DELETE USER", "Deleted user ID: " + selectedUserId, username, userIp);
+                } catch (Exception e) { e.printStackTrace(); }
                 displayData();
                 selectedUserId = null;
             } else {

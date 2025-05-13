@@ -16,6 +16,9 @@ import java.sql.SQLException;
 import javax.swing.JOptionPane;
 import javax.swing.plaf.basic.BasicInternalFrameUI;
 import javax.swing.table.DefaultTableModel;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import config.Logger;
 
 /**
  *
@@ -138,6 +141,11 @@ private void approveRequest() {
         int result = pst.executeUpdate();
         if (result > 0) {
             JOptionPane.showMessageDialog(this, "Request approved. Please set a new password for the user.");
+            // Logging
+            String userIp = "Unknown";
+            try { userIp = InetAddress.getLocalHost().getHostAddress(); } catch (UnknownHostException e) {}
+            String username = System.getProperty("user.name");
+            Logger.log("Approve Password Reset", "Request ID: " + selectedRequestId + ", User: " + selectedUsername, username, userIp);
             loadRequests();
         } else {
             JOptionPane.showMessageDialog(this, "Failed to approve request.");
@@ -167,6 +175,11 @@ private void denyRequest() {
         int result = pst.executeUpdate();
         if (result > 0) {
             JOptionPane.showMessageDialog(this, "Request denied.");
+            // Logging
+            String userIp = "Unknown";
+            try { userIp = InetAddress.getLocalHost().getHostAddress(); } catch (UnknownHostException e) {}
+            String username = System.getProperty("user.name");
+            Logger.log("Deny Password Reset", "Request ID: " + selectedRequestId + ", User: " + selectedUsername, username, userIp);
             loadRequests();
         } else {
             JOptionPane.showMessageDialog(this, "Failed to deny request.");
@@ -225,6 +238,11 @@ private void setNewPassword() {
                 
                 if (userResult > 0 && requestResult > 0) {
                     JOptionPane.showMessageDialog(this, "Password has been reset successfully.");
+                    // Logging
+                    String userIp = "Unknown";
+                    try { userIp = InetAddress.getLocalHost().getHostAddress(); } catch (UnknownHostException e) {}
+                    String username = System.getProperty("user.name");
+                    Logger.log("Set Password", "Request ID: " + selectedRequestId + ", User: " + selectedUsername, username, userIp);
                     loadRequests();
                 } else {
                     JOptionPane.showMessageDialog(this, "Failed to reset password.");
@@ -287,7 +305,7 @@ private String hashPassword(String password) {
                 {null, null, null, null}
             },
             new String [] {
-                "Title 1", "Title 2", "Title 3", "Title 4"
+                "Request ID", "User", "Request Date", "Status"
             }
         ));
         jScrollPane1.setViewportView(requestsTable);

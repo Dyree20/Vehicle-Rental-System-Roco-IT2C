@@ -6,6 +6,7 @@
 package vrs;
 
 import config.dbConnector;
+import config.Logger;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
@@ -24,6 +25,8 @@ import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.plaf.basic.BasicInternalFrameUI;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 
 /**
  *
@@ -40,8 +43,28 @@ public class v_vehicles extends javax.swing.JInternalFrame {
         loadVehicleCards();
         
         this.setBorder(javax.swing.BorderFactory.createEmptyBorder(0, 0, 0, 0));
-                    BasicInternalFrameUI bi = (BasicInternalFrameUI) this.getUI();
-                    bi.setNorthPane(null);
+        javax.swing.plaf.basic.BasicInternalFrameUI bi = (javax.swing.plaf.basic.BasicInternalFrameUI) this.getUI();
+        bi.setNorthPane(null);
+        // Resize to parent desktop pane if available
+        if (getParent() != null && getParent() instanceof javax.swing.JDesktopPane) {
+            javax.swing.JDesktopPane parent = (javax.swing.JDesktopPane) getParent();
+            this.setSize(parent.getSize());
+            this.setLocation(0, 0);
+        }
+        // Log viewing the vehicles panel
+        try {
+            String userIp = "Unknown";
+            try { userIp = InetAddress.getLocalHost().getHostAddress(); } catch (UnknownHostException e) {}
+            String username = System.getProperty("user.name");
+            Logger.log("VIEW VEHICLES", "Vehicles panel opened", username, userIp);
+        } catch (Exception e) { e.printStackTrace(); }
+        // Add action listeners for search and clear
+        jButton1.addActionListener(e -> logSearchAction());
+        jButton2.addActionListener(e -> logClearAction());
+        // Add action listener for mv_type combo box
+        mv_type.addActionListener(e -> logTypeFilterAction());
+        // Set mv_type options
+        mv_type.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "All", "Motorcycle", "AUV", "SUV" }));
     }
 
     private void formInternalFrameOpened(javax.swing.event.InternalFrameEvent evt) {
@@ -137,6 +160,36 @@ private void loadVehicleCards() {
         JOptionPane.showMessageDialog(this, "Database Error: " + e.getMessage());
     }
 }
+
+    private void logSearchAction() {
+        try {
+            String userIp = "Unknown";
+            try { userIp = InetAddress.getLocalHost().getHostAddress(); } catch (UnknownHostException e) {}
+            String username = System.getProperty("user.name");
+            String searchTerm = jTextField1.getText();
+            Logger.log("SEARCH VEHICLES", "Search performed: '" + searchTerm + "'", username, userIp);
+        } catch (Exception e) { e.printStackTrace(); }
+    }
+
+    private void logClearAction() {
+        try {
+            String userIp = "Unknown";
+            try { userIp = InetAddress.getLocalHost().getHostAddress(); } catch (UnknownHostException e) {}
+            String username = System.getProperty("user.name");
+            Logger.log("CLEAR SEARCH", "Vehicle search cleared", username, userIp);
+        } catch (Exception e) { e.printStackTrace(); }
+    }
+
+    private void logTypeFilterAction() {
+        try {
+            String userIp = "Unknown";
+            try { userIp = InetAddress.getLocalHost().getHostAddress(); } catch (UnknownHostException e) {}
+            String username = System.getProperty("user.name");
+            String selectedType = (String) mv_type.getSelectedItem();
+            Logger.log("FILTER VEHICLES", "Vehicle type filter selected: '" + selectedType + "'", username, userIp);
+        } catch (Exception e) { e.printStackTrace(); }
+    }
+
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -152,6 +205,7 @@ private void loadVehicleCards() {
         jTextField1 = new javax.swing.JTextField();
         jButton1 = new javax.swing.JButton();
         jButton2 = new javax.swing.JButton();
+        mv_type = new javax.swing.JComboBox<>();
 
         jScrollPane1.setBackground(new java.awt.Color(102, 0, 0));
         jScrollPane1.setViewportView(vehicleCardsPanel);
@@ -161,6 +215,8 @@ private void loadVehicleCards() {
         jButton1.setText("Search");
 
         jButton2.setText("Clear");
+
+        mv_type.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "All", "Motorcycle", "AUV", "SUV" }));
 
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
@@ -173,7 +229,9 @@ private void loadVehicleCards() {
                 .addComponent(jButton1)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jButton2)
-                .addContainerGap(596, Short.MAX_VALUE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(mv_type, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap(534, Short.MAX_VALUE))
         );
         jPanel1Layout.setVerticalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -182,7 +240,8 @@ private void loadVehicleCards() {
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jTextField1, javax.swing.GroupLayout.DEFAULT_SIZE, 25, Short.MAX_VALUE)
                     .addComponent(jButton1)
-                    .addComponent(jButton2))
+                    .addComponent(jButton2)
+                    .addComponent(mv_type, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addContainerGap())
         );
 
@@ -211,6 +270,7 @@ private void loadVehicleCards() {
     private javax.swing.JPanel jPanel1;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JTextField jTextField1;
+    private javax.swing.JComboBox<String> mv_type;
     private javax.swing.JPanel vehicleCardsPanel;
     // End of variables declaration//GEN-END:variables
 }

@@ -6,12 +6,15 @@
 package vrs;
 
 import config.dbConnector;
+import config.Logger;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.Image;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -592,7 +595,7 @@ private boolean processRentalWithCustomDates(int vehicleId, String name, String 
         clientStmt.setString(5, phone);
         clientStmt.setString(6, email);
         clientStmt.setString(7, license);
-        clientStmt.executeUpdate();
+        int clientResult = clientStmt.executeUpdate();
         
         // Get client ID
         int clientId;
@@ -617,6 +620,14 @@ private boolean processRentalWithCustomDates(int vehicleId, String name, String 
         }
         rs.close();
         clientStmt.close();
+        
+        // Log client add if new
+        if (clientResult > 0) {
+            String userIp = "Unknown";
+            try { userIp = InetAddress.getLocalHost().getHostAddress(); } catch (UnknownHostException e) {}
+            String username = System.getProperty("user.name");
+            Logger.log("Add/Update Client", name + " (" + phone + ", " + email + ") added/updated.", username, userIp);
+        }
         
         // Get vehicle rate
         String rateQuery = "SELECT v_rate FROM tbl_vehicles WHERE v_id = ?";
@@ -659,8 +670,16 @@ private boolean processRentalWithCustomDates(int vehicleId, String name, String 
         rentalStmt.setDouble(5, totalAmount);
         rentalStmt.setString(6, "system"); // Replace with actual user if available
         
-        rentalStmt.executeUpdate();
+        int rentalResult = rentalStmt.executeUpdate();
         rentalStmt.close();
+        
+        // Log rental add
+        if (rentalResult > 0) {
+            String userIp = "Unknown";
+            try { userIp = InetAddress.getLocalHost().getHostAddress(); } catch (UnknownHostException e) {}
+            String username = System.getProperty("user.name");
+            Logger.log("Add Rental", "Vehicle ID: " + vehicleId + ", Client: " + name + ", Dates: " + startDate + " to " + endDate, username, userIp);
+        }
         
         // Update vehicle status
         String updateQuery = "UPDATE tbl_vehicles SET v_status = 'rented' WHERE v_id = ?";
@@ -680,7 +699,7 @@ private boolean processRentalWithCustomDates(int vehicleId, String name, String 
                 "Database Error", JOptionPane.ERROR_MESSAGE);
         return false;
     }
-    }//GEN-LAST:event_btnRentVehicleActionPerformed
+}
 
     private void btnViewDetailsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnViewDetailsActionPerformed
         if (selectedVehicleId == -1) {

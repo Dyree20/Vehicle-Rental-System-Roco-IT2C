@@ -5,6 +5,9 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import javax.swing.plaf.basic.BasicInternalFrameUI;
 import net.proteanit.sql.DbUtils;
+import config.Logger;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 
 /*
  * To change this license header, choose License Headers in Project Properties.
@@ -23,13 +26,23 @@ public class home extends javax.swing.JInternalFrame {
      */
     public home() {
         initComponents();
-            
         displayData();
-        
-        
-     this.setBorder(javax.swing.BorderFactory.createEmptyBorder(0,0,0,0));   
-     BasicInternalFrameUI bi = (BasicInternalFrameUI)this.getUI();
-     bi.setNorthPane(null);
+        this.setBorder(javax.swing.BorderFactory.createEmptyBorder(0,0,0,0));
+        javax.swing.plaf.basic.BasicInternalFrameUI bi = (javax.swing.plaf.basic.BasicInternalFrameUI)this.getUI();
+        bi.setNorthPane(null);
+        // Resize to parent desktop pane if available
+        if (getParent() != null && getParent() instanceof javax.swing.JDesktopPane) {
+            javax.swing.JDesktopPane parent = (javax.swing.JDesktopPane) getParent();
+            this.setSize(parent.getSize());
+            this.setLocation(0, 0);
+        }
+        // Log dashboard panel opened
+        try {
+            String userIp = "Unknown";
+            try { userIp = java.net.InetAddress.getLocalHost().getHostAddress(); } catch (java.net.UnknownHostException e) {}
+            String username = System.getProperty("user.name");
+            config.Logger.log("VIEW DASHBOARD", "Dashboard panel opened", username, userIp);
+        } catch (Exception e) { e.printStackTrace(); }
     }
    
     public void displayData(){

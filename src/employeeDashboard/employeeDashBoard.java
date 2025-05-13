@@ -11,6 +11,7 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import vrs.loginForm;
 import vrs.rentals;
+import config.Logger;
 
 
 /**
@@ -29,76 +30,87 @@ public class employeeDashBoard extends javax.swing.JFrame {
      */
     public employeeDashBoard() {
         initComponents();
-       
-        
-        
+        try {
+            // Log dashboard initialization
+            Logger.log("INIT", "Employee dashboard initialized", currentUsername, "127.0.0.1");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
     
     public void setUsername(String username) {
-    this.currentUsername = username;
-    
-    // Format the welcome message to fit
-    if (username.length() > 8) {
-        // If username is too long, use multiple lines
-        
-        // Use a panel with BoxLayout for multiple lines
-        JPanel textPanel = new JPanel();
-        textPanel.setLayout(new javax.swing.BoxLayout(textPanel, javax.swing.BoxLayout.Y_AXIS));
-        textPanel.setOpaque(false); // Make it transparent
-        
-        // First line is "WELCOME"
-        JLabel welcomeLabel = new JLabel("WELCOME");
-        welcomeLabel.setFont(new java.awt.Font("Tahoma", 1, 14));
-        welcomeLabel.setForeground(java.awt.Color.WHITE);
-        welcomeLabel.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        welcomeLabel.setAlignmentX(java.awt.Component.CENTER_ALIGNMENT);
-        
-        // Second line is the username
-        JLabel usernameLabel = new JLabel(username);
-        usernameLabel.setFont(new java.awt.Font("Tahoma", 1, 12));
-        usernameLabel.setForeground(java.awt.Color.WHITE);
-        usernameLabel.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        usernameLabel.setAlignmentX(java.awt.Component.CENTER_ALIGNMENT);
-        
-        textPanel.add(welcomeLabel);
-        textPanel.add(usernameLabel);
-        
-        // Clear and set panel
-        welcomePanel.removeAll();
-        welcomePanel.setLayout(new java.awt.BorderLayout());
-        welcomePanel.add(textPanel, java.awt.BorderLayout.CENTER);
-    } else {
-        // If username is short enough, use two lines
-        JPanel textPanel = new JPanel();
-        textPanel.setLayout(new javax.swing.BoxLayout(textPanel, javax.swing.BoxLayout.Y_AXIS));
-        textPanel.setOpaque(false); // Make it transparent
-        
-        // First line
-        JLabel welcomeLabel = new JLabel("WELCOME");
-        welcomeLabel.setFont(new java.awt.Font("Tahoma", 1, 14));
-        welcomeLabel.setForeground(java.awt.Color.WHITE);
-        welcomeLabel.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        welcomeLabel.setAlignmentX(java.awt.Component.CENTER_ALIGNMENT);
-        
-        // Second line
-        JLabel usernameLabel = new JLabel(username);
-        usernameLabel.setFont(new java.awt.Font("Tahoma", 1, 14));
-        usernameLabel.setForeground(java.awt.Color.WHITE);
-        usernameLabel.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        usernameLabel.setAlignmentX(java.awt.Component.CENTER_ALIGNMENT);
-        
-        textPanel.add(welcomeLabel);
-        textPanel.add(usernameLabel);
-        
-        // Clear and set panel
-        welcomePanel.removeAll();
-        welcomePanel.setLayout(new java.awt.BorderLayout());
-        welcomePanel.add(textPanel, java.awt.BorderLayout.CENTER);
+        try {
+            this.currentUsername = username;
+            
+            // Log username set
+            Logger.log("INFO", "Employee username set: " + username, username, "127.0.0.1");
+            
+            // Format the welcome message to fit
+            if (username.length() > 8) {
+                // If username is too long, use multiple lines
+                
+                // Use a panel with BoxLayout for multiple lines
+                JPanel textPanel = new JPanel();
+                textPanel.setLayout(new javax.swing.BoxLayout(textPanel, javax.swing.BoxLayout.Y_AXIS));
+                textPanel.setOpaque(false); // Make it transparent
+                
+                // First line is "WELCOME"
+                JLabel welcomeLabel = new JLabel("WELCOME");
+                welcomeLabel.setFont(new java.awt.Font("Tahoma", 1, 14));
+                welcomeLabel.setForeground(java.awt.Color.WHITE);
+                welcomeLabel.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+                welcomeLabel.setAlignmentX(java.awt.Component.CENTER_ALIGNMENT);
+                
+                // Second line is the username
+                JLabel usernameLabel = new JLabel(username);
+                usernameLabel.setFont(new java.awt.Font("Tahoma", 1, 12));
+                usernameLabel.setForeground(java.awt.Color.WHITE);
+                usernameLabel.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+                usernameLabel.setAlignmentX(java.awt.Component.CENTER_ALIGNMENT);
+                
+                textPanel.add(welcomeLabel);
+                textPanel.add(usernameLabel);
+                
+                // Clear and set panel
+                welcomePanel.removeAll();
+                welcomePanel.setLayout(new java.awt.BorderLayout());
+                welcomePanel.add(textPanel, java.awt.BorderLayout.CENTER);
+            } else {
+                // If username is short enough, use two lines
+                JPanel textPanel = new JPanel();
+                textPanel.setLayout(new javax.swing.BoxLayout(textPanel, javax.swing.BoxLayout.Y_AXIS));
+                textPanel.setOpaque(false); // Make it transparent
+                
+                // First line
+                JLabel welcomeLabel = new JLabel("WELCOME");
+                welcomeLabel.setFont(new java.awt.Font("Tahoma", 1, 14));
+                welcomeLabel.setForeground(java.awt.Color.WHITE);
+                welcomeLabel.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+                welcomeLabel.setAlignmentX(java.awt.Component.CENTER_ALIGNMENT);
+                
+                // Second line
+                JLabel usernameLabel = new JLabel(username);
+                usernameLabel.setFont(new java.awt.Font("Tahoma", 1, 14));
+                usernameLabel.setForeground(java.awt.Color.WHITE);
+                usernameLabel.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+                usernameLabel.setAlignmentX(java.awt.Component.CENTER_ALIGNMENT);
+                
+                textPanel.add(welcomeLabel);
+                textPanel.add(usernameLabel);
+                
+                // Clear and set panel
+                welcomePanel.removeAll();
+                welcomePanel.setLayout(new java.awt.BorderLayout());
+                welcomePanel.add(textPanel, java.awt.BorderLayout.CENTER);
+            }
+            
+            welcomePanel.revalidate();
+            welcomePanel.repaint();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
-    
-    welcomePanel.revalidate();
-    welcomePanel.repaint();
-}
+
     public void setCurrentUser(String username) {
     this.currentUser = username;
 }
@@ -244,75 +256,118 @@ public class employeeDashBoard extends javax.swing.JFrame {
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
-    private void e_dashActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_e_dashActionPerformed
-         mainD.removeAll();
-    rentals rentalsPanel = new rentals();
-    mainD.add(rentalsPanel);
-    rentalsPanel.setVisible(true);
-    mainD.revalidate();
-    mainD.repaint();
-    }//GEN-LAST:event_e_dashActionPerformed
-
-    private void logoutMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_logoutMouseClicked
-       loginForm log = new loginForm();
-       log.setVisible(true);
-       this.dispose();
-    }//GEN-LAST:event_logoutMouseClicked
-
-    private void view_vehiclesActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_view_vehiclesActionPerformed
-         for (java.awt.Component comp : mainD.getComponents()) {
-        if (comp instanceof vrs.v_vehicles) {
-            // Already open, bring to front
-            comp.setVisible(true);
-            try {
-                ((javax.swing.JInternalFrame) comp).setSelected(true);
-            } catch (java.beans.PropertyVetoException e) {
-                e.printStackTrace();
-            }
-            return;
+    private void e_dashActionPerformed(java.awt.event.ActionEvent evt) {
+        try {
+            // Log dashboard access
+            Logger.log("ACCESS", "Employee accessed dashboard", currentUsername, "127.0.0.1");
+            
+            mainD.removeAll();
+            rentals rentalsPanel = new rentals();
+            mainD.add(rentalsPanel);
+            rentalsPanel.setVisible(true);
+            mainD.revalidate();
+            mainD.repaint();
+            
+            // Log successful panel display
+            Logger.log("INFO", "Dashboard panel displayed successfully", currentUsername, "127.0.0.1");
+        } catch (Exception e) {
+            // Log error
+            Logger.log("ERROR", "Failed to display dashboard: " + e.getMessage(), currentUsername, "127.0.0.1");
+            e.printStackTrace();
         }
     }
-    
-    // Create and open new v_vehicles
-    vrs.v_vehicles vehicles = new vrs.v_vehicles();
-    mainD.add(vehicles);
-    vehicles.setVisible(true);
-    try {
-        vehicles.setMaximum(true); // Optional: maximize the frame
-        vehicles.setSelected(true);
-    } catch (java.beans.PropertyVetoException e) {
-        e.printStackTrace();
-    }
 
-    }//GEN-LAST:event_view_vehiclesActionPerformed
-
-    private void e_clientActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_e_clientActionPerformed
-        for (java.awt.Component comp : mainD.getComponents()) {
-        if (comp instanceof vrs.add_clients) {
-            // Already open, bring to front
-            comp.setVisible(true);
-            try {
-                ((javax.swing.JInternalFrame) comp).setSelected(true);
-            } catch (java.beans.PropertyVetoException e) {
-                e.printStackTrace();
-            }
-            return;
+    private void logoutMouseClicked(java.awt.event.MouseEvent evt) {
+        try {
+            // Log the logout action
+            Logger.log("LOGOUT", "Employee logged out", currentUsername, "127.0.0.1");
+            
+            // Open login form and close current window
+            loginForm log = new loginForm();
+            log.setVisible(true);
+            this.dispose();
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
-    
-    // Create and open new add_clients
-    vrs.add_clients clients = new vrs.add_clients();
-    // Pass the current username (optional)
-    // clients.setUsername(currentUsername);
-    mainD.add(clients);
-    clients.setVisible(true);
-    try {
-        clients.setMaximum(true); // Optional: makes it fill the desktop pane
-        clients.setSelected(true);
-    } catch (java.beans.PropertyVetoException e) {
-        e.printStackTrace();
+
+    private void view_vehiclesActionPerformed(java.awt.event.ActionEvent evt) {
+        try {
+            // Log vehicles view access
+            Logger.log("ACCESS", "Employee accessed vehicles view", currentUsername, "127.0.0.1");
+            
+            for (java.awt.Component comp : mainD.getComponents()) {
+                if (comp instanceof vrs.v_vehicles) {
+                    // Log existing panel access
+                    Logger.log("INFO", "Accessed existing vehicles panel", currentUsername, "127.0.0.1");
+                    comp.setVisible(true);
+                    try {
+                        ((javax.swing.JInternalFrame) comp).setSelected(true);
+                    } catch (java.beans.PropertyVetoException e) {
+                        Logger.log("ERROR", "Failed to select vehicles panel: " + e.getMessage(), currentUsername, "127.0.0.1");
+                        e.printStackTrace();
+                    }
+                    return;
+                }
+            }
+            
+            // Create and open new v_vehicles
+            vrs.v_vehicles vehicles = new vrs.v_vehicles();
+            mainD.add(vehicles);
+            vehicles.setVisible(true);
+            try {
+                vehicles.setMaximum(true);
+                vehicles.setSelected(true);
+                // Log successful panel creation
+                Logger.log("INFO", "New vehicles panel created and displayed", currentUsername, "127.0.0.1");
+            } catch (java.beans.PropertyVetoException e) {
+                Logger.log("ERROR", "Failed to maximize vehicles panel: " + e.getMessage(), currentUsername, "127.0.0.1");
+                e.printStackTrace();
+            }
+        } catch (Exception e) {
+            Logger.log("ERROR", "Failed to access vehicles view: " + e.getMessage(), currentUsername, "127.0.0.1");
+            e.printStackTrace();
+        }
     }
-    }//GEN-LAST:event_e_clientActionPerformed
+
+    private void e_clientActionPerformed(java.awt.event.ActionEvent evt) {
+        try {
+            // Log clients view access
+            Logger.log("ACCESS", "Employee accessed clients management", currentUsername, "127.0.0.1");
+            
+            for (java.awt.Component comp : mainD.getComponents()) {
+                if (comp instanceof vrs.add_clients) {
+                    // Log existing panel access
+                    Logger.log("INFO", "Accessed existing clients panel", currentUsername, "127.0.0.1");
+                    comp.setVisible(true);
+                    try {
+                        ((javax.swing.JInternalFrame) comp).setSelected(true);
+                    } catch (java.beans.PropertyVetoException e) {
+                        Logger.log("ERROR", "Failed to select clients panel: " + e.getMessage(), currentUsername, "127.0.0.1");
+                        e.printStackTrace();
+                    }
+                    return;
+                }
+            }
+            
+            // Create and open new add_clients
+            vrs.add_clients clients = new vrs.add_clients();
+            mainD.add(clients);
+            clients.setVisible(true);
+            try {
+                clients.setMaximum(true);
+                clients.setSelected(true);
+                // Log successful panel creation
+                Logger.log("INFO", "New clients panel created and displayed", currentUsername, "127.0.0.1");
+            } catch (java.beans.PropertyVetoException e) {
+                Logger.log("ERROR", "Failed to maximize clients panel: " + e.getMessage(), currentUsername, "127.0.0.1");
+                e.printStackTrace();
+            }
+        } catch (Exception e) {
+            Logger.log("ERROR", "Failed to access clients management: " + e.getMessage(), currentUsername, "127.0.0.1");
+            e.printStackTrace();
+        }
+    }
 
     /**
      * @param args the command line arguments

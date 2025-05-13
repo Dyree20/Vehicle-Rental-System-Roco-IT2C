@@ -12,6 +12,9 @@ import java.text.SimpleDateFormat;
 import javax.swing.*;
 import javax.swing.table.*;
 import java.util.Date;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import config.Logger;
 
 public class rentals extends javax.swing.JInternalFrame {
     
@@ -50,6 +53,13 @@ public class rentals extends javax.swing.JInternalFrame {
         setupTable();
         setupActionListeners();
         loadRentals("All");
+        // Ensure the internal frame matches the desktop pane size
+        javax.swing.SwingUtilities.invokeLater(() -> {
+            if (getParent() != null) {
+                setSize(getParent().getWidth(), getParent().getHeight());
+                setLocation(0, 0);
+            }
+        });
     }
     
     private void initComponents() {
@@ -615,6 +625,12 @@ public class rentals extends javax.swing.JInternalFrame {
                     
                     // Commit transaction
                     con.commit();
+                    
+                    // Log rental return
+                    String userIp = "Unknown";
+                    try { userIp = InetAddress.getLocalHost().getHostAddress(); } catch (UnknownHostException e) {}
+                    String username = System.getProperty("user.name");
+                    Logger.log("Return Rental", "Rental ID: " + selectedRentalId + ", Vehicle ID: " + vehicleId, username, userIp);
                     
                     JOptionPane.showMessageDialog(this, "Vehicle returned successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
                     
