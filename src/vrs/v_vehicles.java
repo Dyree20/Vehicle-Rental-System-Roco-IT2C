@@ -40,11 +40,11 @@ public class v_vehicles extends javax.swing.JInternalFrame {
     public v_vehicles() {
         initComponents();
         
-        loadVehicleCards();
+        loadVehicleCards(txtSearch.getText().trim(), (String)mv_type.getSelectedItem());
         
         this.setBorder(javax.swing.BorderFactory.createEmptyBorder(0, 0, 0, 0));
         javax.swing.plaf.basic.BasicInternalFrameUI bi = (javax.swing.plaf.basic.BasicInternalFrameUI) this.getUI();
-        bi.setNorthPane(null);
+                    bi.setNorthPane(null);
         // Resize to parent desktop pane if available
         if (getParent() != null && getParent() instanceof javax.swing.JDesktopPane) {
             javax.swing.JDesktopPane parent = (javax.swing.JDesktopPane) getParent();
@@ -59,33 +59,66 @@ public class v_vehicles extends javax.swing.JInternalFrame {
             Logger.log("VIEW VEHICLES", "Vehicles panel opened", username, userIp);
         } catch (Exception e) { e.printStackTrace(); }
         // Add action listeners for search and clear
-        jButton1.addActionListener(e -> logSearchAction());
-        jButton2.addActionListener(e -> logClearAction());
+        jButton1.addActionListener(e -> {
+            String searchText = txtSearch.getText().trim();
+            String selectedType = (String) mv_type.getSelectedItem();
+            loadVehicleCards(searchText, selectedType);
+        });
+        jButton2.addActionListener(e -> {
+            txtSearch.setText("");
+            mv_type.setSelectedItem("All");
+            loadVehicleCards("", "All");
+        });
         // Add action listener for mv_type combo box
-        mv_type.addActionListener(e -> logTypeFilterAction());
+        mv_type.addActionListener(e -> {
+            String searchText = txtSearch.getText().trim();
+            String selectedType = (String) mv_type.getSelectedItem();
+            loadVehicleCards(searchText, selectedType);
+        });
         // Set mv_type options
         mv_type.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "All", "Motorcycle", "AUV", "SUV" }));
     }
 
     private void formInternalFrameOpened(javax.swing.event.InternalFrameEvent evt) {
-    loadVehicleCards(); // Load vehicles when the form opens
-}
+        loadVehicleCards(txtSearch.getText().trim(), (String)mv_type.getSelectedItem()); // Load vehicles when the form opens
+    }
     
     
-private void loadVehicleCards() {
+private void loadVehicleCards(String searchText, String selectedType) {
     try {
-        // Get the container panel inside the scroll pane
-        JPanel containerPanel = (JPanel) jScrollPane1.getViewport().getView(); // Change scrollPane to jScrollPane1
+        JPanel containerPanel = (JPanel) jScrollPane1.getViewport().getView();
         containerPanel.removeAll();
-        containerPanel.setLayout(new FlowLayout(FlowLayout.LEFT, 10, 10)); // Left-aligned with spacing
-        
-        // Connect to database
+        containerPanel.setLayout(new FlowLayout(FlowLayout.LEFT, 10, 10));
+
         Connection con = new dbConnector().getConnection();
-        String query = "SELECT * FROM tbl_vehicles";
-        PreparedStatement pst = con.prepareStatement(query);
+        StringBuilder query = new StringBuilder("SELECT * FROM tbl_vehicles");
+        boolean hasType = selectedType != null && !selectedType.equals("All");
+        boolean hasSearch = searchText != null && !searchText.isEmpty();
+        if (hasType || hasSearch) {
+            query.append(" WHERE ");
+            if (hasType) {
+                query.append("v_type = ?");
+            }
+            if (hasSearch) {
+                if (hasType) query.append(" AND ");
+                query.append("(LOWER(v_make) LIKE ? OR LOWER(v_model) LIKE ? OR LOWER(v_type) LIKE ?)");
+            }
+        }
+        PreparedStatement pst = con.prepareStatement(query.toString());
+        int paramIndex = 1;
+        if (hasType) {
+            pst.setString(paramIndex++, selectedType);
+        }
+        if (hasSearch) {
+            String likeText = "%" + searchText.toLowerCase() + "%";
+            pst.setString(paramIndex++, likeText);
+            pst.setString(paramIndex++, likeText);
+            pst.setString(paramIndex++, likeText);
+        }
         ResultSet rs = pst.executeQuery();
-        
+        boolean found = false;
         while (rs.next()) {
+            found = true;
             // Get vehicle data
             final int vehicleId = rs.getInt("v_id");
             final String make = rs.getString("v_make");
@@ -94,6 +127,7 @@ private void loadVehicleCards() {
             final String plate = rs.getString("v_plate");
             final String rate = rs.getString("v_rate");
             final String status = rs.getString("v_status");
+            final String vType = rs.getString("v_type");
             byte[] imageData = rs.getBytes("v_image");
             
             // Create a card panel for this vehicle
@@ -125,11 +159,11 @@ private void loadVehicleCards() {
             nameLabel.setForeground(Color.WHITE);
             nameLabel.setFont(new Font("Tahoma", Font.BOLD, 14));
             
-            JLabel typeYearLabel = new JLabel("Type: Year: " + year + " Plate: " + plate);
+            JLabel typeYearLabel = new JLabel("Type: " + vType + " | Year: " + year + " | Plate: " + plate);
             typeYearLabel.setForeground(Color.WHITE);
             typeYearLabel.setFont(new Font("Tahoma", Font.PLAIN, 12));
             
-            JLabel priceLabel = new JLabel("Price: " + rate + " per day");
+            JLabel priceLabel = new JLabel("Price: ₱" + rate + " per day");
             priceLabel.setForeground(Color.WHITE);
             priceLabel.setFont(new Font("Tahoma", Font.PLAIN, 12));
             
@@ -149,6 +183,13 @@ private void loadVehicleCards() {
             containerPanel.add(cardPanel);
         }
         
+        if (!found) {
+            JLabel noVehiclesLabel = new JLabel("No vehicles found matching your criteria.");
+            noVehiclesLabel.setFont(new Font("Tahoma", Font.BOLD, 14));
+            noVehiclesLabel.setForeground(Color.WHITE);
+            containerPanel.add(noVehiclesLabel);
+        }
+        
         // Refresh the container
         containerPanel.revalidate();
         containerPanel.repaint();
@@ -166,7 +207,7 @@ private void loadVehicleCards() {
             String userIp = "Unknown";
             try { userIp = InetAddress.getLocalHost().getHostAddress(); } catch (UnknownHostException e) {}
             String username = System.getProperty("user.name");
-            String searchTerm = jTextField1.getText();
+            String searchTerm = txtSearch.getText();
             Logger.log("SEARCH VEHICLES", "Search performed: '" + searchTerm + "'", username, userIp);
         } catch (Exception e) { e.printStackTrace(); }
     }
@@ -202,7 +243,7 @@ private void loadVehicleCards() {
         jScrollPane1 = new javax.swing.JScrollPane();
         vehicleCardsPanel = new javax.swing.JPanel();
         jPanel1 = new javax.swing.JPanel();
-        jTextField1 = new javax.swing.JTextField();
+        txtSearch = new javax.swing.JTextField();
         jButton1 = new javax.swing.JButton();
         jButton2 = new javax.swing.JButton();
         mv_type = new javax.swing.JComboBox<>();
@@ -216,7 +257,7 @@ private void loadVehicleCards() {
 
         jButton2.setText("Clear");
 
-        mv_type.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "All", "Motorcycle", "AUV", "SUV" }));
+        mv_type.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
 
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
@@ -224,7 +265,7 @@ private void loadVehicleCards() {
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel1Layout.createSequentialGroup()
                 .addGap(25, 25, 25)
-                .addComponent(jTextField1, javax.swing.GroupLayout.PREFERRED_SIZE, 151, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(txtSearch, javax.swing.GroupLayout.PREFERRED_SIZE, 151, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(18, 18, 18)
                 .addComponent(jButton1)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
@@ -238,7 +279,7 @@ private void loadVehicleCards() {
             .addGroup(jPanel1Layout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jTextField1, javax.swing.GroupLayout.DEFAULT_SIZE, 25, Short.MAX_VALUE)
+                    .addComponent(txtSearch, javax.swing.GroupLayout.DEFAULT_SIZE, 25, Short.MAX_VALUE)
                     .addComponent(jButton1)
                     .addComponent(jButton2)
                     .addComponent(mv_type, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
@@ -269,8 +310,8 @@ private void loadVehicleCards() {
     private javax.swing.JButton jButton2;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JScrollPane jScrollPane1;
-    private javax.swing.JTextField jTextField1;
     private javax.swing.JComboBox<String> mv_type;
+    private javax.swing.JTextField txtSearch;
     private javax.swing.JPanel vehicleCardsPanel;
     // End of variables declaration//GEN-END:variables
 }

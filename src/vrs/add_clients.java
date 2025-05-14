@@ -40,34 +40,45 @@ public class add_clients extends javax.swing.JInternalFrame {
     
     private javax.swing.JTextField txtClientEmail;
     private int selectedVehicleId = -1;
-private JPanel selectedCardPanel = null;
-private Color originalCardColor = new Color(128, 0, 0); // Dark red background
-private Color selectedCardColor = new Color(200, 100, 0); // Orange-ish highlight
+    private JPanel selectedCardPanel = null;
+    private Color originalCardColor = new Color(128, 0, 0); // Dark red background
+    private Color selectedCardColor = new Color(200, 100, 0); // Orange-ish highlight
     
     /**
      * Creates new form add_clients
      */
     public add_clients() {
         initComponents();
-        vehicleCardsContainer.setLayout(new FlowLayout(FlowLayout.LEFT, 10, 10));
-    vehicleCardsContainer.setBackground(new Color(180, 180, 180)); // Light grey background
-    
-    // Set up filter
-    cboFilter.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "All Vehicles", "Available Only", "Luxury", "Economy" }));
-    
-    // Initialize buttons
-    btnRentVehicle.setEnabled(false);
-    btnViewDetails.setEnabled(false);
-    
-    // Set default selected vehicle text
-    lblSelectedVehicle.setText("Selected Vehicle: None");
-    
-    // Load vehicles
-    loadVehicleCards();
-    
-    
-    
-}
+        setupComponents();
+        // Remove border and title bar for borderless internal frame
+        this.setBorder(javax.swing.BorderFactory.createEmptyBorder(0, 0, 0, 0));
+        javax.swing.plaf.basic.BasicInternalFrameUI bi = (javax.swing.plaf.basic.BasicInternalFrameUI) this.getUI();
+        bi.setNorthPane(null);
+        
+        // Initialize the vehicle cards container
+        if (vehicleCardsContainer != null) {
+            vehicleCardsContainer.setLayout(new FlowLayout(FlowLayout.LEFT, 10, 10));
+            vehicleCardsContainer.setBackground(new Color(180, 180, 180));
+        }
+        
+        // Initialize the filter combo box
+        if (cboFilter != null) {
+            cboFilter.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "All", "Truck", "Motorcycle", "AUV", "SUV" }));
+        }
+        
+        // Initialize buttons and labels
+        if (btnRentVehicle != null) btnRentVehicle.setEnabled(false);
+        if (btnViewDetails != null) btnViewDetails.setEnabled(false);
+        if (lblSelectedVehicle != null) lblSelectedVehicle.setText("Selected Vehicle: None");
+        
+        // Load vehicle cards
+        loadVehicleCards();
+        
+        // Add listeners for full search functionality
+        if (btnSearch != null) btnSearch.addActionListener(this::btnSearchActionPerformed);
+        if (cboFilter != null) cboFilter.addActionListener(e -> btnSearchActionPerformed(null));
+        if (txtSearch != null) txtSearch.addActionListener(e -> btnSearchActionPerformed(null));
+    }
     
     private void setupComponents() {
     // Set FlowLayout for the vehicle cards container
@@ -75,7 +86,7 @@ private Color selectedCardColor = new Color(200, 100, 0); // Orange-ish highligh
     
     // Update filter combo box items
     cboFilter.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { 
-        "All Vehicles", "Available Only", "Luxury", "Economy" 
+        "All", "Truck", "Motorcycle", "AUV", "SUV" 
     }));
     
     // Set the selected vehicle label text
@@ -83,30 +94,37 @@ private Color selectedCardColor = new Color(200, 100, 0); // Orange-ish highligh
 }
     private void loadVehicleCards() {
     try {
-        // Clear existing cards
         vehicleCardsContainer.removeAll();
-        
-        // Connect to database
         Connection con = new dbConnector().getConnection();
-        String query = "SELECT * FROM tbl_vehicles";
-        
-        // Apply filter if selected
-        if (cboFilter.getSelectedItem().toString().equals("Available Only")) {
-            query += " WHERE v_status = 'available'";
-        } else if (cboFilter.getSelectedItem().toString().equals("Luxury")) {
-            query += " WHERE v_rate > 500";  // Adjust threshold as needed
-        } else if (cboFilter.getSelectedItem().toString().equals("Economy")) {
-            query += " WHERE v_rate <= 500";  // Adjust threshold as needed
+        StringBuilder query = new StringBuilder("SELECT * FROM tbl_vehicles");
+        boolean hasFilter = !cboFilter.getSelectedItem().toString().equals("All");
+        String searchText = txtSearch.getText().trim().toLowerCase();
+        boolean hasSearch = !searchText.isEmpty();
+        if (hasFilter || hasSearch) {
+            query.append(" WHERE ");
+            if (hasFilter) {
+                query.append("v_type = ?");
+            }
+            if (hasSearch) {
+                if (hasFilter) query.append(" AND ");
+                query.append("(LOWER(v_make) LIKE ? OR LOWER(v_model) LIKE ? OR LOWER(v_type) LIKE ?)");
+            }
         }
-        
-        PreparedStatement pst = con.prepareStatement(query);
+        PreparedStatement pst = con.prepareStatement(query.toString());
+        int paramIndex = 1;
+        if (hasFilter) {
+            pst.setString(paramIndex++, cboFilter.getSelectedItem().toString());
+        }
+        if (hasSearch) {
+            String likeText = "%" + searchText + "%";
+            pst.setString(paramIndex++, likeText);
+            pst.setString(paramIndex++, likeText);
+            pst.setString(paramIndex++, likeText);
+        }
         ResultSet rs = pst.executeQuery();
-        
         int count = 0;
-        
         while (rs.next()) {
             count++;
-            // Get vehicle data
             final int vehicleId = rs.getInt("v_id");
             final String make = rs.getString("v_make");
             final String model = rs.getString("v_model");
@@ -114,45 +132,33 @@ private Color selectedCardColor = new Color(200, 100, 0); // Orange-ish highligh
             final String plate = rs.getString("v_plate");
             final String rate = rs.getString("v_rate");
             final String status = rs.getString("v_status");
+            final String vType = rs.getString("v_type");
             byte[] imageData = rs.getBytes("v_image");
-            
-            // Create a card panel for this vehicle
             final JPanel cardPanel = new JPanel();
             cardPanel.setLayout(new BorderLayout(10, 0));
             cardPanel.setPreferredSize(new Dimension(300, 150));
-            cardPanel.setBackground(originalCardColor); // Dark red background
+            cardPanel.setBackground(originalCardColor);
             cardPanel.setBorder(BorderFactory.createLineBorder(Color.BLACK));
-            
-            // Store the vehicle ID as a property of the panel
             cardPanel.putClientProperty("vehicleId", vehicleId);
-            
-            // Make the card interactive
             cardPanel.addMouseListener(new java.awt.event.MouseAdapter() {
                 public void mouseClicked(java.awt.event.MouseEvent evt) {
-                    // Call selection method
                     selectVehicleCard(cardPanel, vehicleId, make + " " + model);
                 }
-                
-                // Add hover effect (optional)
                 public void mouseEntered(java.awt.event.MouseEvent evt) {
                     if (cardPanel != selectedCardPanel) {
-                        cardPanel.setBackground(new Color(150, 30, 30)); // Slightly lighter on hover
+                        cardPanel.setBackground(new Color(150, 30, 30));
                     }
                 }
-                
                 public void mouseExited(java.awt.event.MouseEvent evt) {
                     if (cardPanel != selectedCardPanel) {
-                        cardPanel.setBackground(originalCardColor); // Back to original when not hovered
+                        cardPanel.setBackground(originalCardColor);
                     }
                 }
             });
-            
-            // Image panel (left side)
             JLabel imageLabel = new JLabel();
             imageLabel.setPreferredSize(new Dimension(120, 100));
             imageLabel.setBackground(Color.BLACK);
             imageLabel.setForeground(Color.WHITE);
-            
             if (imageData != null && imageData.length > 0) {
                 ImageIcon imageIcon = new ImageIcon(imageData);
                 Image image = imageIcon.getImage().getScaledInstance(120, 100, Image.SCALE_SMOOTH);
@@ -160,35 +166,21 @@ private Color selectedCardColor = new Color(200, 100, 0); // Orange-ish highligh
             } else {
                 imageLabel.setText("No Image");
             }
-            
-            // Text panel (right side)
             JPanel textPanel = new JPanel();
             textPanel.setLayout(new BoxLayout(textPanel, BoxLayout.Y_AXIS));
             textPanel.setOpaque(false);
-            
-            // Create text labels
             JLabel nameLabel = new JLabel("Name: " + make + " " + model);
             nameLabel.setForeground(Color.WHITE);
             nameLabel.setFont(new Font("Tahoma", Font.BOLD, 14));
-            
-            JLabel typeYearLabel = new JLabel("Type: Year: " + year + " Plate: " + plate);
+            JLabel typeYearLabel = new JLabel("Type: " + vType + " | Year: " + year + " | Plate: " + plate);
             typeYearLabel.setForeground(Color.WHITE);
             typeYearLabel.setFont(new Font("Tahoma", Font.PLAIN, 12));
-            
-            JLabel priceLabel = new JLabel("Price: " + rate + " per week");
+            JLabel priceLabel = new JLabel("Price: ₱" + rate + " per week");
             priceLabel.setForeground(Color.WHITE);
             priceLabel.setFont(new Font("Tahoma", Font.PLAIN, 12));
-            
             JLabel statusLabel = new JLabel("Status: " + status);
-            statusLabel.setForeground(Color.WHITE);
-            if (status.equals("available")) {
-                statusLabel.setForeground(Color.GREEN);
-            } else {
-                statusLabel.setForeground(Color.RED);
-            }
+            statusLabel.setForeground(status.equals("available") ? Color.GREEN : Color.RED);
             statusLabel.setFont(new Font("Tahoma", Font.BOLD, 12));
-            
-            // Add text labels to the text panel
             textPanel.add(Box.createVerticalStrut(20));
             textPanel.add(nameLabel);
             textPanel.add(Box.createVerticalStrut(10));
@@ -197,33 +189,22 @@ private Color selectedCardColor = new Color(200, 100, 0); // Orange-ish highligh
             textPanel.add(priceLabel);
             textPanel.add(Box.createVerticalStrut(5));
             textPanel.add(statusLabel);
-            
-            // Add image and text panels to the card
             cardPanel.add(imageLabel, BorderLayout.WEST);
             cardPanel.add(textPanel, BorderLayout.CENTER);
-            
-            // Check if this is the previously selected vehicle and highlight it
             if (vehicleId == selectedVehicleId) {
                 cardPanel.setBackground(selectedCardColor);
                 selectedCardPanel = cardPanel;
             }
-            
-            // Add the card to the container
             vehicleCardsContainer.add(cardPanel);
         }
-        
-        // Add a message if no vehicles found
         if (count == 0) {
             JLabel noVehiclesLabel = new JLabel("No vehicles found matching your criteria.");
             noVehiclesLabel.setFont(new Font("Tahoma", Font.BOLD, 14));
             noVehiclesLabel.setForeground(Color.WHITE);
             vehicleCardsContainer.add(noVehiclesLabel);
         }
-        
-        // Refresh the container
         vehicleCardsContainer.revalidate();
         vehicleCardsContainer.repaint();
-        
         rs.close();
         pst.close();
         con.close();
@@ -264,16 +245,40 @@ private void resetSelection() {
 }
 // Add this variable declaration at the class leve    
     private void btnSearchActionPerformed(java.awt.event.ActionEvent evt) {
-    // Search implementation
-}
+        String searchText = txtSearch.getText().trim();
+        String filterType = cboFilter.getSelectedItem() != null ? cboFilter.getSelectedItem().toString() : "All";
+        // Log search action
+        try {
+            String userIp = "Unknown";
+            try { userIp = InetAddress.getLocalHost().getHostAddress(); } catch (UnknownHostException e) {}
+            String username = System.getProperty("user.name");
+            Logger.log("SEARCH VEHICLE", "Search text: '" + searchText + "', Type: '" + filterType + "'", username, userIp);
+        } catch (Exception e) { e.printStackTrace(); }
+        loadVehicleCards();
+    }
 private void btnClearActionPerformed(java.awt.event.ActionEvent evt) {
     txtSearch.setText("");
     loadVehicleCards();
+    // Log clear action
+    try {
+        String userIp = "Unknown";
+        try { userIp = java.net.InetAddress.getLocalHost().getHostAddress(); } catch (java.net.UnknownHostException e) {}
+        String username = System.getProperty("user.name");
+        Logger.log("CLEAR CLIENT SEARCH", "Cleared client search/filter", username, userIp);
+    } catch (Exception e) { e.printStackTrace(); }
 }
 
 
 private void cboFilterActionPerformed(java.awt.event.ActionEvent evt) {
     loadVehicleCards();
+    // Log filter action
+    try {
+        String userIp = "Unknown";
+        try { userIp = java.net.InetAddress.getLocalHost().getHostAddress(); } catch (java.net.UnknownHostException e) {}
+        String username = System.getProperty("user.name");
+        String filterType = cboFilter.getSelectedItem() != null ? cboFilter.getSelectedItem().toString() : "All";
+        Logger.log("FILTER CLIENTS", "Filter selected: '" + filterType + "'", username, userIp);
+    } catch (Exception e) { e.printStackTrace(); }
 }
     
     /**
@@ -298,8 +303,9 @@ private void cboFilterActionPerformed(java.awt.event.ActionEvent evt) {
         btnRentVehicle = new javax.swing.JButton();
         btnViewDetails = new javax.swing.JButton();
         lblSelectedVehicle = new javax.swing.JLabel();
+        edit_client = new javax.swing.JButton();
 
-        jPanel1.setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
+        jPanel1.setLayout(new BorderLayout());
 
         searchPanel.setBackground(new java.awt.Color(110, 0, 0));
 
@@ -307,7 +313,7 @@ private void cboFilterActionPerformed(java.awt.event.ActionEvent evt) {
 
         btnClear.setText("CLEAR");
 
-        cboFilter.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
+        cboFilter.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "All", "Truck", "Motorcycle", "AUV", "SUV" }));
 
         javax.swing.GroupLayout searchPanelLayout = new javax.swing.GroupLayout(searchPanel);
         searchPanel.setLayout(searchPanelLayout);
@@ -336,7 +342,7 @@ private void cboFilterActionPerformed(java.awt.event.ActionEvent evt) {
                 .addContainerGap(18, Short.MAX_VALUE))
         );
 
-        jPanel1.add(searchPanel, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 0, 930, 60));
+        jPanel1.add(searchPanel, BorderLayout.NORTH);
 
         vehicleDisplayPanel.setBackground(new java.awt.Color(110, 50, 50));
 
@@ -353,7 +359,7 @@ private void cboFilterActionPerformed(java.awt.event.ActionEvent evt) {
             .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 400, Short.MAX_VALUE)
         );
 
-        jPanel1.add(vehicleDisplayPanel, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 60, 930, 400));
+        jPanel1.add(vehicleDisplayPanel, BorderLayout.CENTER);
 
         actionPanel.setBackground(new java.awt.Color(80, 50, 50));
 
@@ -373,6 +379,8 @@ private void cboFilterActionPerformed(java.awt.event.ActionEvent evt) {
 
         lblSelectedVehicle.setForeground(new java.awt.Color(255, 255, 255));
 
+        edit_client.setText("EDIT");
+
         javax.swing.GroupLayout actionPanelLayout = new javax.swing.GroupLayout(actionPanel);
         actionPanel.setLayout(actionPanelLayout);
         actionPanelLayout.setHorizontalGroup(
@@ -381,8 +389,11 @@ private void cboFilterActionPerformed(java.awt.event.ActionEvent evt) {
                 .addGap(36, 36, 36)
                 .addGroup(actionPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(btnViewDetails, javax.swing.GroupLayout.PREFERRED_SIZE, 136, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(btnRentVehicle, javax.swing.GroupLayout.PREFERRED_SIZE, 136, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 416, Short.MAX_VALUE)
+                    .addGroup(actionPanelLayout.createSequentialGroup()
+                        .addComponent(btnRentVehicle, javax.swing.GroupLayout.PREFERRED_SIZE, 136, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(66, 66, 66)
+                        .addComponent(edit_client, javax.swing.GroupLayout.PREFERRED_SIZE, 88, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 262, Short.MAX_VALUE)
                 .addComponent(lblSelectedVehicle, javax.swing.GroupLayout.PREFERRED_SIZE, 197, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(145, 145, 145))
         );
@@ -390,7 +401,9 @@ private void cboFilterActionPerformed(java.awt.event.ActionEvent evt) {
             actionPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(actionPanelLayout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(btnRentVehicle, javax.swing.GroupLayout.PREFERRED_SIZE, 33, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGroup(actionPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                    .addComponent(edit_client, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(btnRentVehicle, javax.swing.GroupLayout.DEFAULT_SIZE, 33, Short.MAX_VALUE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(btnViewDetails, javax.swing.GroupLayout.PREFERRED_SIZE, 33, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
@@ -399,14 +412,14 @@ private void cboFilterActionPerformed(java.awt.event.ActionEvent evt) {
                 .addGap(0, 19, Short.MAX_VALUE))
         );
 
-        jPanel1.add(actionPanel, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 460, 930, 140));
+        jPanel1.add(actionPanel, BorderLayout.SOUTH);
 
         getContentPane().add(jPanel1, java.awt.BorderLayout.CENTER);
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
-    private void btnRentVehicleActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnRentVehicleActionPerformed
+    private void btnRentVehicleActionPerformed(java.awt.event.ActionEvent evt) {                                               
         
     if (selectedVehicleId == -1) {
         JOptionPane.showMessageDialog(this, "Please select a vehicle first.");
@@ -456,6 +469,14 @@ private void cboFilterActionPerformed(java.awt.event.ActionEvent evt) {
     JTextField txtClientLicense = new JTextField(20);
     licensePanel.add(txtClientLicense, BorderLayout.CENTER);
     formPanel.add(licensePanel);
+    formPanel.add(Box.createVerticalStrut(10));
+    
+    // Client address field
+    JPanel addressPanel = new JPanel(new BorderLayout(5, 0));
+    addressPanel.add(new JLabel("Address:"), BorderLayout.WEST);
+    JTextField txtClientAddress = new JTextField(20);
+    addressPanel.add(txtClientAddress, BorderLayout.CENTER);
+    formPanel.add(addressPanel);
     formPanel.add(Box.createVerticalStrut(10));
     
     // Start date field (use JDateChooser from JCalendar library or com.toedter.calendar)
@@ -509,12 +530,13 @@ private void cboFilterActionPerformed(java.awt.event.ActionEvent evt) {
         String clientPhone = txtClientPhone.getText().trim();
         String clientEmail = txtClientEmail.getText().trim();
         String clientLicense = txtClientLicense.getText().trim();
+        String clientAddress = txtClientAddress.getText().trim();
         String startDate = txtStartDate.getText().trim();
         String endDate = txtEndDate.getText().trim();
         
         // Validate inputs
         if (clientName.isEmpty() || clientPhone.isEmpty() || clientEmail.isEmpty() || 
-            clientLicense.isEmpty() || startDate.isEmpty() || endDate.isEmpty()) {
+            clientLicense.isEmpty() || clientAddress.isEmpty() || startDate.isEmpty() || endDate.isEmpty()) {
             JOptionPane.showMessageDialog(rentalDialog, "Please fill in all fields.");
             return;
         }
@@ -542,7 +564,7 @@ private void cboFilterActionPerformed(java.awt.event.ActionEvent evt) {
         }
         
         // Process rental with custom start and end dates
-        if (processRentalWithCustomDates(selectedVehicleId, clientName, clientPhone, clientEmail, clientLicense, startDate, endDate)) {
+        if (processRentalWithCustomDates(selectedVehicleId, clientName, clientPhone, clientEmail, clientLicense, clientAddress, startDate, endDate)) {
             rentalDialog.dispose();
             loadVehicleCards(); // Refresh vehicle list
             resetSelection();   // Reset vehicle selection
@@ -578,23 +600,25 @@ private void updateWeekCalculation(JTextField startDateField, JTextField endDate
     }
 }
 // Modified process rental method with custom dates
-private boolean processRentalWithCustomDates(int vehicleId, String name, String phone, String email, String license, String startDate, String endDate) {
+private boolean processRentalWithCustomDates(int vehicleId, String name, String phone, String email, String license, String address, String startDate, String endDate) {
     try {
         Connection con = new dbConnector().getConnection();
         con.setAutoCommit(false); // Start transaction
         
         // Insert client if new, or get existing client ID
-        String clientQuery = "INSERT INTO tbl_clients (c_name, c_phone, c_email, c_license) VALUES (?, ?, ?, ?) " +
-                           "ON DUPLICATE KEY UPDATE c_phone=?, c_email=?, c_license=?";
+        String clientQuery = "INSERT INTO tbl_clients (c_name, c_phone, c_email, c_license_number, c_address) VALUES (?, ?, ?, ?, ?) " +
+                           "ON DUPLICATE KEY UPDATE c_phone=?, c_email=?, c_license_number=?, c_address=?";
         
         PreparedStatement clientStmt = con.prepareStatement(clientQuery, Statement.RETURN_GENERATED_KEYS);
         clientStmt.setString(1, name);
         clientStmt.setString(2, phone);
         clientStmt.setString(3, email);
         clientStmt.setString(4, license);
-        clientStmt.setString(5, phone);
-        clientStmt.setString(6, email);
-        clientStmt.setString(7, license);
+        clientStmt.setString(5, address);
+        clientStmt.setString(6, phone);
+        clientStmt.setString(7, email);
+        clientStmt.setString(8, license);
+        clientStmt.setString(9, address);
         int clientResult = clientStmt.executeUpdate();
         
         // Get client ID
@@ -659,7 +683,7 @@ private boolean processRentalWithCustomDates(int vehicleId, String name, String 
         
         // Create rental record with custom dates
         String rentalQuery = "INSERT INTO tbl_rentals (r_vehicle_id, r_client_id, r_start_date, r_end_date, " +
-                           "r_amount, r_status, r_created_by) VALUES " +
+                           "r_total_amount, r_status, r_created_by) VALUES " +
                            "(?, ?, ?, ?, ?, 'active', ?)";
         
         PreparedStatement rentalStmt = con.prepareStatement(rentalQuery);
@@ -691,7 +715,7 @@ private boolean processRentalWithCustomDates(int vehicleId, String name, String 
         con.commit();
         con.close();
         
-        JOptionPane.showMessageDialog(this, "Vehicle rented successfully for " + weeks + " weeks!\nTotal Amount: $" + totalAmount);
+        JOptionPane.showMessageDialog(this, "Vehicle rented successfully for " + weeks + " weeks!\nTotal Amount: ₱" + totalAmount);
         return true;
         
     } catch (SQLException | java.text.ParseException ex) {
@@ -723,7 +747,7 @@ private boolean processRentalWithCustomDates(int vehicleId, String name, String 
             details.append("Model: ").append(rs.getString("v_model")).append("\n");
             details.append("Year: ").append(rs.getString("v_year")).append("\n");
             details.append("Plate Number: ").append(rs.getString("v_plate")).append("\n");
-            details.append("Weekly Rate: $").append(rs.getString("v_rate")).append("\n");
+            details.append("Weekly Rate: ₱").append(rs.getString("v_rate")).append("\n");
             details.append("Status: ").append(rs.getString("v_status")).append("\n");
             
             // Show the details in a message dialog
@@ -739,6 +763,14 @@ private boolean processRentalWithCustomDates(int vehicleId, String name, String 
 
     }//GEN-LAST:event_btnViewDetailsActionPerformed
 
+    private void edit_clientActionPerformed(java.awt.event.ActionEvent evt) {
+        if (selectedVehicleId == -1) {
+            JOptionPane.showMessageDialog(this, "Please select a vehicle to edit.", "No Selection", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        // Add your edit functionality here
+        JOptionPane.showMessageDialog(this, "Edit functionality for vehicle ID: " + selectedVehicleId, "Edit Vehicle", JOptionPane.INFORMATION_MESSAGE);
+    }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JPanel actionPanel;
@@ -747,6 +779,7 @@ private boolean processRentalWithCustomDates(int vehicleId, String name, String 
     private javax.swing.JButton btnSearch;
     private javax.swing.JButton btnViewDetails;
     private javax.swing.JComboBox<String> cboFilter;
+    private javax.swing.JButton edit_client;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JLabel lblSelectedVehicle;

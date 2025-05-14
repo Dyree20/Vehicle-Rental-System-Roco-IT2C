@@ -42,6 +42,7 @@ public class rentals extends javax.swing.JInternalFrame {
     private JButton btnSearch;
     private JButton btnReturnVehicle;
     private JButton btnViewDetails;
+    private JButton btnClear;
     private JComboBox<String> cboFilter;
     
     /**
@@ -49,6 +50,10 @@ public class rentals extends javax.swing.JInternalFrame {
      */
     public rentals() {
         initComponents();
+        // Remove border and title bar for borderless internal frame
+        this.setBorder(javax.swing.BorderFactory.createEmptyBorder(0, 0, 0, 0));
+        javax.swing.plaf.basic.BasicInternalFrameUI bi = (javax.swing.plaf.basic.BasicInternalFrameUI) this.getUI();
+        bi.setNorthPane(null);
         setupAdditionalComponents();
         setupTable();
         setupActionListeners();
@@ -84,6 +89,7 @@ public class rentals extends javax.swing.JInternalFrame {
         // Initialize components
         txtSearch = new JTextField(15);
         btnSearch = new JButton("Search");
+        btnClear = new JButton("Clear Completed");
         cboFilter = new JComboBox<>(new String[]{"All", "Active", "Completed"});
         jScrollPane1 = new JScrollPane();
         tblRentals = new JTable();
@@ -94,6 +100,8 @@ public class rentals extends javax.swing.JInternalFrame {
         jPanel2.add(txtSearch);
         jPanel2.add(btnSearch);
         jPanel2.add(cboFilter);
+        jPanel2.add(Box.createHorizontalGlue());
+        jPanel2.add(btnClear);
         
         jScrollPane1.setViewportView(tblRentals);
         jPanel3.add(jScrollPane1, BorderLayout.CENTER);
@@ -346,6 +354,9 @@ public class rentals extends javax.swing.JInternalFrame {
             }
         });
 
+        // Clear button
+        btnClear.addActionListener(e -> clearCompletedRentals());
+
         // Return Vehicle button
         btnReturnVehicle.addActionListener(e -> {
             if (selectedRentalId == -1) {
@@ -394,6 +405,8 @@ public class rentals extends javax.swing.JInternalFrame {
         ResultSet rs = null;
         
         try {
+            String username = System.getProperty("user.name");
+            Logger.logRentalAction(username, "View Rentals", "Filter: " + filter);
             rentalTableModel.setRowCount(0); // Clear existing rows
             
             con = new dbConnector().getConnection();
@@ -463,8 +476,11 @@ public class rentals extends javax.swing.JInternalFrame {
             
             // Update status label
             updateStatusLabel();
+            Logger.logRentalAction(username, "View Rentals", "Loaded " + rentalTableModel.getRowCount() + " rentals");
             
         } catch (SQLException e) {
+            String username = System.getProperty("user.name");
+            Logger.logRentalAction(username, "Error", "Failed to load rentals: " + e.getMessage());
             handleDatabaseError("Error loading rentals", e);
         } finally {
             closeResources(con, pst, rs);
@@ -477,6 +493,8 @@ public class rentals extends javax.swing.JInternalFrame {
         ResultSet rs = null;
         
         try {
+            String username = System.getProperty("user.name");
+            Logger.logRentalAction(username, "View Rental Details", "Rental ID: " + rentalId);
             con = new dbConnector().getConnection();
             String query = "SELECT r.*, v.v_make, v.v_model, v.v_year, v.v_plate, v.v_image, " +
                           "c.c_name, c.c_phone, c.c_email, c.c_license_number " +
@@ -491,11 +509,15 @@ public class rentals extends javax.swing.JInternalFrame {
             
             if (rs.next()) {
                 updateDetailPanel(rs);
+                Logger.logRentalAction(username, "View Rental Details", "Successfully loaded details for Rental ID: " + rentalId);
             } else {
+                Logger.logRentalAction(username, "Error", "Rental not found with ID: " + rentalId);
                 JOptionPane.showMessageDialog(this, "Rental not found", "Error", JOptionPane.ERROR_MESSAGE);
             }
             
         } catch (SQLException e) {
+            String username = System.getProperty("user.name");
+            Logger.logRentalAction(username, "Error", "Failed to load rental details: " + e.getMessage());
             handleDatabaseError("Error loading rental details", e);
         } finally {
             closeResources(con, pst, rs);
@@ -552,6 +574,8 @@ public class rentals extends javax.swing.JInternalFrame {
     
     private void handleDatabaseError(String message, SQLException e) {
         String errorMessage = message + ": " + e.getMessage();
+        String username = System.getProperty("user.name");
+        Logger.logRentalAction(username, "Database Error", errorMessage);
         System.err.println(errorMessage);
         e.printStackTrace();
         JOptionPane.showMessageDialog(this, errorMessage, "Database Error", JOptionPane.ERROR_MESSAGE);
@@ -563,12 +587,16 @@ public class rentals extends javax.swing.JInternalFrame {
             if (pst != null) pst.close();
             if (con != null) con.close();
         } catch (SQLException e) {
+            String username = System.getProperty("user.name");
+            Logger.logRentalAction(username, "Error", "Failed to close database resources: " + e.getMessage());
             System.err.println("Error closing resources: " + e.getMessage());
         }
     }
     
     private void returnVehicle() {
         if (selectedRentalId == -1) {
+            String username = System.getProperty("user.name");
+            Logger.logRentalAction(username, "Error", "Attempt to return vehicle without selecting a rental");
             JOptionPane.showMessageDialog(this, "Please select a rental first", "No Selection", JOptionPane.WARNING_MESSAGE);
             return;
         }
@@ -580,6 +608,8 @@ public class rentals extends javax.swing.JInternalFrame {
         ResultSet statusRs = null;
         
         try {
+            String username = System.getProperty("user.name");
+            Logger.logRentalAction(username, "Process Return", "Processing vehicle return for Rental ID: " + selectedRentalId);
             con = new dbConnector().getConnection();
             
             // Get rental status
@@ -629,8 +659,7 @@ public class rentals extends javax.swing.JInternalFrame {
                     // Log rental return
                     String userIp = "Unknown";
                     try { userIp = InetAddress.getLocalHost().getHostAddress(); } catch (UnknownHostException e) {}
-                    String username = System.getProperty("user.name");
-                    Logger.log("Return Rental", "Rental ID: " + selectedRentalId + ", Vehicle ID: " + vehicleId, username, userIp);
+                    Logger.logRentalAction(username, "Return Rental", "Rental ID: " + selectedRentalId + ", Vehicle ID: " + vehicleId);
                     
                     JOptionPane.showMessageDialog(this, "Vehicle returned successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
                     
@@ -690,8 +719,57 @@ public class rentals extends javax.swing.JInternalFrame {
         lblVehicleImage.setText("No Image");
     }
 
-   
-    
+    private void clearCompletedRentals() {
+        int confirm = JOptionPane.showConfirmDialog(this,
+                "Are you sure you want to clear all completed rental records?\nThis action cannot be undone, and clients with only completed rentals will also be deleted.",
+                "Confirm Clear",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.WARNING_MESSAGE);
+
+        String username = System.getProperty("user.name");
+        if (confirm == JOptionPane.YES_OPTION) {
+            Connection con = null;
+            PreparedStatement pst = null;
+            PreparedStatement pstDeleteClients = null;
+            
+            try {
+                Logger.logRentalAction(username, "Clear Records", "User confirmed clear operation. Starting deletion of completed rentals.");
+                con = new dbConnector().getConnection();
+                // 1. Delete completed rentals
+                String query = "DELETE FROM tbl_rentals WHERE r_status = 'completed'";
+                pst = con.prepareStatement(query);
+                int deletedCount = pst.executeUpdate();
+                Logger.logRentalAction(username, "Clear Records", "Deleted " + deletedCount + " completed rental records.");
+                
+                // 2. Delete clients who have no active rentals left
+                Logger.logRentalAction(username, "Clear Records", "Starting deletion of clients with no active rentals.");
+                String deleteClientsQuery = "DELETE FROM tbl_clients WHERE c_id NOT IN (SELECT r_client_id FROM tbl_rentals WHERE r_status = 'active')";
+                pstDeleteClients = con.prepareStatement(deleteClientsQuery);
+                int deletedClients = pstDeleteClients.executeUpdate();
+                Logger.logRentalAction(username, "Clear Records", "Deleted " + deletedClients + " clients with no active rentals.");
+                
+                Logger.logRentalAction(username, "Clear Records", "Clear operation completed: " + deletedCount + " rentals, " + deletedClients + " clients.");
+                
+                JOptionPane.showMessageDialog(this,
+                        deletedCount + " completed rental record(s) and " + deletedClients + " client(s) have been cleared.",
+                        "Clear Successful",
+                        JOptionPane.INFORMATION_MESSAGE);
+                
+                // Refresh the table
+                loadRentals(cboFilter.getSelectedItem().toString());
+                
+            } catch (SQLException e) {
+                Logger.logRentalAction(username, "Error", "Failed to clear completed rentals and clients: " + e.getMessage());
+                handleDatabaseError("Error clearing completed rentals and clients", e);
+            } finally {
+                closeResources(con, pst, null);
+                closeResources(null, pstDeleteClients, null);
+            }
+        } else {
+            Logger.logRentalAction(username, "Clear Records", "User cancelled clear operation.");
+        }
+    }
+
     // Button renderer for the Actions column
     class ButtonRenderer extends JButton implements TableCellRenderer {
         public ButtonRenderer() {

@@ -27,9 +27,9 @@ public class home extends javax.swing.JInternalFrame {
     public home() {
         initComponents();
         displayData();
-        this.setBorder(javax.swing.BorderFactory.createEmptyBorder(0,0,0,0));
+     this.setBorder(javax.swing.BorderFactory.createEmptyBorder(0,0,0,0));   
         javax.swing.plaf.basic.BasicInternalFrameUI bi = (javax.swing.plaf.basic.BasicInternalFrameUI)this.getUI();
-        bi.setNorthPane(null);
+     bi.setNorthPane(null);
         // Resize to parent desktop pane if available
         if (getParent() != null && getParent() instanceof javax.swing.JDesktopPane) {
             javax.swing.JDesktopPane parent = (javax.swing.JDesktopPane) getParent();
