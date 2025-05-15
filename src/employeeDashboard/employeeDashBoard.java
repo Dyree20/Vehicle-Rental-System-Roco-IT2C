@@ -136,10 +136,10 @@ public class employeeDashBoard extends javax.swing.JFrame {
         mainD = new javax.swing.JDesktopPane();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
-        setPreferredSize(new java.awt.Dimension(1085, 721));
+        setPreferredSize(new java.awt.Dimension(1085, 751));
 
         jPanel1.setBackground(new java.awt.Color(255, 51, 51));
-        jPanel1.setPreferredSize(new java.awt.Dimension(1085, 721));
+        jPanel1.setPreferredSize(new java.awt.Dimension(1085, 751));
         jPanel1.setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
 
         jPanel3.setBackground(new java.awt.Color(255, 153, 51));

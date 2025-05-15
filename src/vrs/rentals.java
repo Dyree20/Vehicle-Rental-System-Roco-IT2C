@@ -102,12 +102,10 @@ public class rentals extends javax.swing.JInternalFrame {
         jPanel2.add(cboFilter);
         jPanel2.add(Box.createHorizontalGlue());
         jPanel2.add(btnClear);
+        jPanel2.add(btnReturnVehicle);
         
         jScrollPane1.setViewportView(tblRentals);
         jPanel3.add(jScrollPane1, BorderLayout.CENTER);
-        
-        jPanel4.add(btnReturnVehicle);
-        jPanel4.add(btnViewDetails);
         
         // Add panels to main panel
         jPanel1.add(jPanel2, BorderLayout.NORTH);
@@ -285,8 +283,6 @@ public class rentals extends javax.swing.JInternalFrame {
         // Add buttons panel
         JPanel buttonsPanel = new JPanel();
         buttonsPanel.setBackground(new java.awt.Color(110, 0, 0));
-        buttonsPanel.add(btnReturnVehicle);
-        buttonsPanel.add(btnViewDetails);
         jPanel4.add(buttonsPanel, BorderLayout.SOUTH);
         
         // Hide buttons initially
@@ -642,7 +638,7 @@ public class rentals extends javax.swing.JInternalFrame {
                 
                 try {
                     // 1. Update rental status
-                    String rentalQuery = "UPDATE tbl_rentals SET r_status = 'completed', r_date_returned = CURRENT_TIMESTAMP WHERE r_id = ?";
+                    String rentalQuery = "UPDATE tbl_rentals SET r_status = 'completed', r_return_date = CURRENT_TIMESTAMP WHERE r_id = ?";
                     rentalPst = con.prepareStatement(rentalQuery);
                     rentalPst.setInt(1, selectedRentalId);
                     rentalPst.executeUpdate();

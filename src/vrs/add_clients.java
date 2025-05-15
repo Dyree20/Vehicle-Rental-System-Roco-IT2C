@@ -9,6 +9,7 @@ import config.dbConnector;
 import config.Logger;
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Dialog;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
@@ -29,7 +30,10 @@ import javax.swing.JDialog;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTextArea;
 import javax.swing.JTextField;
+import javax.swing.SwingUtilities;
 
 /**
  *
@@ -727,40 +731,112 @@ private boolean processRentalWithCustomDates(int vehicleId, String name, String 
 
     private void btnViewDetailsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnViewDetailsActionPerformed
         if (selectedVehicleId == -1) {
-        JOptionPane.showMessageDialog(this, "Please select a vehicle first", "No Selection", JOptionPane.WARNING_MESSAGE);
-        return;
-    }
-    
-    try {
-        Connection con = new dbConnector().getConnection();
-        String query = "SELECT * FROM tbl_vehicles WHERE v_id = ?";
-        PreparedStatement pst = con.prepareStatement(query);
-        pst.setInt(1, selectedVehicleId);
-        ResultSet rs = pst.executeQuery();
-        
-        if (rs.next()) {
-            // Create a formatted message with vehicle details
-            StringBuilder details = new StringBuilder();
-            details.append("VEHICLE DETAILS\n\n");
-            details.append("ID: ").append(rs.getInt("v_id")).append("\n");
-            details.append("Make: ").append(rs.getString("v_make")).append("\n");
-            details.append("Model: ").append(rs.getString("v_model")).append("\n");
-            details.append("Year: ").append(rs.getString("v_year")).append("\n");
-            details.append("Plate Number: ").append(rs.getString("v_plate")).append("\n");
-            details.append("Weekly Rate: ₱").append(rs.getString("v_rate")).append("\n");
-            details.append("Status: ").append(rs.getString("v_status")).append("\n");
-            
-            // Show the details in a message dialog
-            JOptionPane.showMessageDialog(this, details.toString(), "Vehicle Details", JOptionPane.INFORMATION_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Please select a vehicle first", "No Selection", JOptionPane.WARNING_MESSAGE);
+            return;
         }
-        
-        rs.close();
-        pst.close();
-        con.close();
-    } catch (SQLException e) {
-        JOptionPane.showMessageDialog(this, "Error retrieving vehicle details: " + e.getMessage(), "Database Error", JOptionPane.ERROR_MESSAGE);
-    }
-
+        try {
+            Connection con = new dbConnector().getConnection();
+            String query = "SELECT * FROM tbl_vehicles WHERE v_id = ?";
+            PreparedStatement pst = con.prepareStatement(query);
+            pst.setInt(1, selectedVehicleId);
+            ResultSet rs = pst.executeQuery();
+            if (rs.next()) {
+                StringBuilder details = new StringBuilder();
+                details.append("VEHICLE DETAILS\n\n");
+                details.append("ID: ").append(rs.getInt("v_id")).append("\n");
+                details.append("Make: ").append(rs.getString("v_make")).append("\n");
+                details.append("Model: ").append(rs.getString("v_model")).append("\n");
+                details.append("Year: ").append(rs.getString("v_year")).append("\n");
+                details.append("Plate Number: ").append(rs.getString("v_plate")).append("\n");
+                details.append("Weekly Rate: ₱").append(rs.getString("v_rate")).append("\n");
+                details.append("Status: ").append(rs.getString("v_status")).append("\n");
+                String status = rs.getString("v_status");
+                if (status.equalsIgnoreCase("rented")) {
+                    // Query rental and client info for dialog display
+                    StringBuilder extraInfo = new StringBuilder();
+                    try {
+                        Connection con2 = new dbConnector().getConnection();
+                        String rentalQuery = "SELECT r.r_start_date, r.r_end_date, r.r_total_amount, c.c_name, c.c_phone, c.c_email, c.c_address FROM tbl_rentals r JOIN tbl_clients c ON r.r_client_id = c.c_id WHERE r.r_vehicle_id = ? AND r.r_status = 'active'";
+                        PreparedStatement pst2 = con2.prepareStatement(rentalQuery);
+                        pst2.setInt(1, selectedVehicleId);
+                        ResultSet rs2 = pst2.executeQuery();
+                        if (rs2.next()) {
+                            extraInfo.append("\n--- RENTAL RECEIPT ---\n");
+                            extraInfo.append("Client Name: ").append(rs2.getString("c_name")).append("\n");
+                            extraInfo.append("Phone: ").append(rs2.getString("c_phone")).append("\n");
+                            extraInfo.append("Email: ").append(rs2.getString("c_email")).append("\n");
+                            extraInfo.append("Address: ").append(rs2.getString("c_address")).append("\n");
+                            extraInfo.append("Start Date: ").append(rs2.getString("r_start_date")).append("\n");
+                            extraInfo.append("End Date: ").append(rs2.getString("r_end_date")).append("\n");
+                            extraInfo.append("Total Amount: ₱").append(String.format("%.2f", rs2.getDouble("r_total_amount"))).append("\n");
+                        }
+                        rs2.close();
+                        pst2.close();
+                        con2.close();
+                    } catch (Exception ex) {
+                        extraInfo.append("\n[Error loading rental/client info]");
+                    }
+                    // Show custom dialog with Print Receipt button
+                    JTextArea textArea = new JTextArea(details.toString() + extraInfo.toString());
+                    textArea.setEditable(false);
+                    JScrollPane scrollPane = new JScrollPane(textArea);
+                    JButton printButton = new JButton("Print Receipt");
+                    printButton.addActionListener(e -> {
+                        try {
+                            // Query rental and client info for printing (same as before)
+                            Connection con2 = new dbConnector().getConnection();
+                            String rentalQuery = "SELECT r.r_start_date, r.r_end_date, r.r_total_amount, c.c_name, c.c_phone, c.c_email, c.c_address FROM tbl_rentals r JOIN tbl_clients c ON r.r_client_id = c.c_id WHERE r.r_vehicle_id = ? AND r.r_status = 'active'";
+                            PreparedStatement pst2 = con2.prepareStatement(rentalQuery);
+                            pst2.setInt(1, selectedVehicleId);
+                            ResultSet rs2 = pst2.executeQuery();
+                            StringBuilder receipt = new StringBuilder();
+                            receipt.append(details.toString());
+                            if (rs2.next()) {
+                                receipt.append("\n--- RENTAL RECEIPT ---\n");
+                                receipt.append("Client Name: ").append(rs2.getString("c_name")).append("\n");
+                                receipt.append("Phone: ").append(rs2.getString("c_phone")).append("\n");
+                                receipt.append("Email: ").append(rs2.getString("c_email")).append("\n");
+                                receipt.append("Address: ").append(rs2.getString("c_address")).append("\n");
+                                receipt.append("Start Date: ").append(rs2.getString("r_start_date")).append("\n");
+                                receipt.append("End Date: ").append(rs2.getString("r_end_date")).append("\n");
+                                receipt.append("Total Amount: ₱").append(String.format("%.2f", rs2.getDouble("r_total_amount"))).append("\n");
+                            } else {
+                                receipt.append("\nNo active rental found for this vehicle.");
+                            }
+                            rs2.close();
+                            pst2.close();
+                            con2.close();
+                            // Print the receipt
+                            JTextArea printArea = new JTextArea(receipt.toString());
+                            boolean complete = printArea.print();
+                            if (complete) {
+                                JOptionPane.showMessageDialog(this, "Receipt sent to printer.", "Print", JOptionPane.INFORMATION_MESSAGE);
+                            } else {
+                                JOptionPane.showMessageDialog(this, "Printing was cancelled.", "Print", JOptionPane.WARNING_MESSAGE);
+                            }
+                        } catch (Exception ex) {
+                            JOptionPane.showMessageDialog(this, "Error printing receipt: " + ex.getMessage(), "Print Error", JOptionPane.ERROR_MESSAGE);
+                        }
+                    });
+                    JPanel panel = new JPanel(new BorderLayout());
+                    panel.add(scrollPane, BorderLayout.CENTER);
+                    panel.add(printButton, BorderLayout.SOUTH);
+                    JDialog dialog = new JDialog(SwingUtilities.getWindowAncestor(this), "Vehicle Details", Dialog.ModalityType.APPLICATION_MODAL);
+                    dialog.getContentPane().add(panel);
+                    dialog.setSize(350, 350);
+                    dialog.setLocationRelativeTo(this);
+                    dialog.setVisible(true);
+                } else {
+                    // Show normal details dialog
+                    JOptionPane.showMessageDialog(this, details.toString(), "Vehicle Details", JOptionPane.INFORMATION_MESSAGE);
+                }
+            }
+            rs.close();
+            pst.close();
+            con.close();
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(this, "Error retrieving vehicle details: " + e.getMessage(), "Database Error", JOptionPane.ERROR_MESSAGE);
+        }
     }//GEN-LAST:event_btnViewDetailsActionPerformed
 
     private void edit_clientActionPerformed(java.awt.event.ActionEvent evt) {
