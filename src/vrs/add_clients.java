@@ -41,7 +41,6 @@ import javax.swing.SwingUtilities;
  */
 public class add_clients extends javax.swing.JInternalFrame {
     
-    
     private javax.swing.JTextField txtClientEmail;
     private int selectedVehicleId = -1;
     private JPanel selectedCardPanel = null;
@@ -55,8 +54,8 @@ public class add_clients extends javax.swing.JInternalFrame {
         initComponents();
         setupComponents();
         // Remove border and title bar for borderless internal frame
-        this.setBorder(javax.swing.BorderFactory.createEmptyBorder(0, 0, 0, 0));
-        javax.swing.plaf.basic.BasicInternalFrameUI bi = (javax.swing.plaf.basic.BasicInternalFrameUI) this.getUI();
+        this.setBorder(javax.swing.BorderFactory.createEmptyBorder(0,0,0,0));   
+        javax.swing.plaf.basic.BasicInternalFrameUI bi = (javax.swing.plaf.basic.BasicInternalFrameUI)this.getUI();
         bi.setNorthPane(null);
         
         // Initialize the vehicle cards container
@@ -85,169 +84,193 @@ public class add_clients extends javax.swing.JInternalFrame {
     }
     
     private void setupComponents() {
-    // Set FlowLayout for the vehicle cards container
-    vehicleCardsContainer.setLayout(new FlowLayout(FlowLayout.LEFT, 10, 10));
-    
-    // Update filter combo box items
-    cboFilter.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { 
-        "All", "Truck", "Motorcycle", "AUV", "SUV" 
-    }));
-    
-    // Set the selected vehicle label text
-    lblSelectedVehicle.setText("Selected Vehicle: None");
-}
+        // Set FlowLayout for the vehicle cards container
+        vehicleCardsContainer.setLayout(new FlowLayout(FlowLayout.LEFT, 10, 10));
+        
+        // Update filter combo box items
+        cboFilter.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { 
+            "All", "Truck", "Motorcycle", "AUV", "SUV" 
+        }));
+        
+        // Set the selected vehicle label text
+        lblSelectedVehicle.setText("Selected Vehicle: None");
+    }
+
     private void loadVehicleCards() {
-    try {
-        vehicleCardsContainer.removeAll();
-        Connection con = new dbConnector().getConnection();
-        StringBuilder query = new StringBuilder("SELECT * FROM tbl_vehicles");
-        boolean hasFilter = !cboFilter.getSelectedItem().toString().equals("All");
-        String searchText = txtSearch.getText().trim().toLowerCase();
-        boolean hasSearch = !searchText.isEmpty();
-        if (hasFilter || hasSearch) {
-            query.append(" WHERE ");
+        try {
+            vehicleCardsContainer.removeAll();
+            Connection con = new dbConnector().getConnection();
+            StringBuilder query = new StringBuilder("SELECT * FROM tbl_vehicles");
+            boolean hasFilter = !cboFilter.getSelectedItem().toString().equals("All");
+            String searchText = txtSearch.getText().trim().toLowerCase();
+            boolean hasSearch = !searchText.isEmpty();
+            if (hasFilter || hasSearch) {
+                query.append(" WHERE ");
+                if (hasFilter) {
+                    query.append("v_type = ?");
+                }
+                if (hasSearch) {
+                    if (hasFilter) query.append(" AND ");
+                    query.append("(LOWER(v_make) LIKE ? OR LOWER(v_model) LIKE ? OR LOWER(v_type) LIKE ?)");
+                }
+            }
+            PreparedStatement pst = con.prepareStatement(query.toString());
+            int paramIndex = 1;
             if (hasFilter) {
-                query.append("v_type = ?");
+                pst.setString(paramIndex++, cboFilter.getSelectedItem().toString());
             }
             if (hasSearch) {
-                if (hasFilter) query.append(" AND ");
-                query.append("(LOWER(v_make) LIKE ? OR LOWER(v_model) LIKE ? OR LOWER(v_type) LIKE ?)");
+                String likeText = "%" + searchText + "%";
+                pst.setString(paramIndex++, likeText);
+                pst.setString(paramIndex++, likeText);
+                pst.setString(paramIndex++, likeText);
             }
-        }
-        PreparedStatement pst = con.prepareStatement(query.toString());
-        int paramIndex = 1;
-        if (hasFilter) {
-            pst.setString(paramIndex++, cboFilter.getSelectedItem().toString());
-        }
-        if (hasSearch) {
-            String likeText = "%" + searchText + "%";
-            pst.setString(paramIndex++, likeText);
-            pst.setString(paramIndex++, likeText);
-            pst.setString(paramIndex++, likeText);
-        }
-        ResultSet rs = pst.executeQuery();
-        int count = 0;
-        while (rs.next()) {
-            count++;
-            final int vehicleId = rs.getInt("v_id");
-            final String make = rs.getString("v_make");
-            final String model = rs.getString("v_model");
-            final String year = rs.getString("v_year");
-            final String plate = rs.getString("v_plate");
-            final String rate = rs.getString("v_rate");
-            final String status = rs.getString("v_status");
-            final String vType = rs.getString("v_type");
-            byte[] imageData = rs.getBytes("v_image");
-            final JPanel cardPanel = new JPanel();
-            cardPanel.setLayout(new BorderLayout(10, 0));
-            cardPanel.setPreferredSize(new Dimension(300, 150));
-            cardPanel.setBackground(originalCardColor);
-            cardPanel.setBorder(BorderFactory.createLineBorder(Color.BLACK));
-            cardPanel.putClientProperty("vehicleId", vehicleId);
-            cardPanel.addMouseListener(new java.awt.event.MouseAdapter() {
-                public void mouseClicked(java.awt.event.MouseEvent evt) {
-                    selectVehicleCard(cardPanel, vehicleId, make + " " + model);
-                }
-                public void mouseEntered(java.awt.event.MouseEvent evt) {
-                    if (cardPanel != selectedCardPanel) {
-                        cardPanel.setBackground(new Color(150, 30, 30));
+            ResultSet rs = pst.executeQuery();
+            int count = 0;
+            while (rs.next()) {
+                count++;
+                final int vehicleId = rs.getInt("v_id");
+                final String make = rs.getString("v_make");
+                final String model = rs.getString("v_model");
+                final String year = rs.getString("v_year");
+                final String plate = rs.getString("v_plate");
+                final String rate = rs.getString("v_rate");
+                final String status = rs.getString("v_status");
+                final String vType = rs.getString("v_type");
+                byte[] imageData = rs.getBytes("v_image");
+                
+                final JPanel cardPanel = createVehicleCard(make, model, year, plate, 
+                    rate, status, vType, imageData, originalCardColor, new Dimension(300, 150));
+                
+                cardPanel.putClientProperty("vehicleId", vehicleId);
+                cardPanel.addMouseListener(new java.awt.event.MouseAdapter() {
+                    public void mouseClicked(java.awt.event.MouseEvent evt) {
+                        selectVehicleCard(cardPanel, vehicleId, make + " " + model);
                     }
-                }
-                public void mouseExited(java.awt.event.MouseEvent evt) {
-                    if (cardPanel != selectedCardPanel) {
-                        cardPanel.setBackground(originalCardColor);
+                    public void mouseEntered(java.awt.event.MouseEvent evt) {
+                        if (cardPanel != selectedCardPanel) {
+                            cardPanel.setBackground(new Color(150, 30, 30));
+                        }
                     }
-                }
-            });
-            JLabel imageLabel = new JLabel();
-            imageLabel.setPreferredSize(new Dimension(120, 100));
-            imageLabel.setBackground(Color.BLACK);
-            imageLabel.setForeground(Color.WHITE);
-            if (imageData != null && imageData.length > 0) {
-                ImageIcon imageIcon = new ImageIcon(imageData);
-                Image image = imageIcon.getImage().getScaledInstance(120, 100, Image.SCALE_SMOOTH);
-                imageLabel.setIcon(new ImageIcon(image));
-            } else {
-                imageLabel.setText("No Image");
+                    public void mouseExited(java.awt.event.MouseEvent evt) {
+                        if (cardPanel != selectedCardPanel) {
+                            cardPanel.setBackground(originalCardColor);
+                        }
+                    }
+                });
+                
+                vehicleCardsContainer.add(cardPanel);
             }
-            JPanel textPanel = new JPanel();
-            textPanel.setLayout(new BoxLayout(textPanel, BoxLayout.Y_AXIS));
-            textPanel.setOpaque(false);
-            JLabel nameLabel = new JLabel("Name: " + make + " " + model);
-            nameLabel.setForeground(Color.WHITE);
-            nameLabel.setFont(new Font("Tahoma", Font.BOLD, 14));
-            JLabel typeYearLabel = new JLabel("Type: " + vType + " | Year: " + year + " | Plate: " + plate);
-            typeYearLabel.setForeground(Color.WHITE);
-            typeYearLabel.setFont(new Font("Tahoma", Font.PLAIN, 12));
-            JLabel priceLabel = new JLabel("Price: ₱" + rate + " per week");
-            priceLabel.setForeground(Color.WHITE);
-            priceLabel.setFont(new Font("Tahoma", Font.PLAIN, 12));
-            JLabel statusLabel = new JLabel("Status: " + status);
-            statusLabel.setForeground(status.equals("available") ? Color.GREEN : Color.RED);
-            statusLabel.setFont(new Font("Tahoma", Font.BOLD, 12));
-            textPanel.add(Box.createVerticalStrut(20));
-            textPanel.add(nameLabel);
-            textPanel.add(Box.createVerticalStrut(10));
-            textPanel.add(typeYearLabel);
-            textPanel.add(Box.createVerticalStrut(5));
-            textPanel.add(priceLabel);
-            textPanel.add(Box.createVerticalStrut(5));
-            textPanel.add(statusLabel);
-            cardPanel.add(imageLabel, BorderLayout.WEST);
-            cardPanel.add(textPanel, BorderLayout.CENTER);
-            if (vehicleId == selectedVehicleId) {
-                cardPanel.setBackground(selectedCardColor);
-                selectedCardPanel = cardPanel;
+            
+            if (count == 0) {
+                JLabel noResultsLabel = new JLabel("No vehicles found");
+                noResultsLabel.setForeground(Color.WHITE);
+                noResultsLabel.setFont(new Font("Tahoma", Font.BOLD, 14));
+                vehicleCardsContainer.add(noResultsLabel);
             }
-            vehicleCardsContainer.add(cardPanel);
+            
+            vehicleCardsContainer.revalidate();
+            vehicleCardsContainer.repaint();
+            
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(this, "Error loading vehicles: " + e.getMessage(),
+                "Database Error", JOptionPane.ERROR_MESSAGE);
         }
-        if (count == 0) {
-            JLabel noVehiclesLabel = new JLabel("No vehicles found matching your criteria.");
-            noVehiclesLabel.setFont(new Font("Tahoma", Font.BOLD, 14));
-            noVehiclesLabel.setForeground(Color.WHITE);
-            vehicleCardsContainer.add(noVehiclesLabel);
+    }
+
+    private JPanel createVehicleCard(String make, String model, String year, String plate, 
+                                   String rate, String status, String vType, byte[] imageData, 
+                                   Color bgColor, Dimension cardSize) {
+        JPanel cardPanel = new JPanel(new BorderLayout(10, 0));
+        cardPanel.setPreferredSize(cardSize);
+        cardPanel.setBackground(bgColor);
+        cardPanel.setBorder(BorderFactory.createLineBorder(Color.BLACK));
+        
+        // Image label
+        JLabel imageLabel = new JLabel("No Image");
+        imageLabel.setPreferredSize(new Dimension(120, 100));
+        imageLabel.setBackground(Color.BLACK);
+        imageLabel.setForeground(Color.WHITE);
+        imageLabel.setHorizontalAlignment(JLabel.CENTER);
+        imageLabel.setBorder(BorderFactory.createLineBorder(Color.BLACK));
+        
+        if (imageData != null && imageData.length > 0) {
+            ImageIcon icon = new ImageIcon(imageData);
+            Image img = icon.getImage().getScaledInstance(120, 100, Image.SCALE_SMOOTH);
+            imageLabel.setIcon(new ImageIcon(img));
+            imageLabel.setText(""); // Clear the text when setting an image
         }
-        vehicleCardsContainer.revalidate();
+        
+        // Text panel
+        JPanel textPanel = new JPanel();
+        textPanel.setLayout(new BoxLayout(textPanel, BoxLayout.Y_AXIS));
+        textPanel.setOpaque(false);
+        
+        // Labels
+        JLabel nameLabel = new JLabel("Name: " + make + " " + model);
+        nameLabel.setForeground(Color.WHITE);
+        nameLabel.setFont(new Font("Tahoma", Font.BOLD, 14));
+        
+        JLabel typeYearLabel = new JLabel("Type: " + vType + " | Year: " + year + " | Plate: " + plate);
+        typeYearLabel.setForeground(Color.WHITE);
+        typeYearLabel.setFont(new Font("Tahoma", Font.PLAIN, 12));
+        
+        JLabel priceLabel = new JLabel("Price: ₱" + rate + " per week");
+        priceLabel.setForeground(Color.WHITE);
+        priceLabel.setFont(new Font("Tahoma", Font.PLAIN, 12));
+        
+        JLabel statusLabel = new JLabel("Status: " + status);
+        statusLabel.setForeground(status.equals("available") ? Color.GREEN : Color.RED);
+        statusLabel.setFont(new Font("Tahoma", Font.BOLD, 12));
+        
+        // Add components
+        textPanel.add(Box.createVerticalStrut(20));
+        textPanel.add(nameLabel);
+        textPanel.add(Box.createVerticalStrut(10));
+        textPanel.add(typeYearLabel);
+        textPanel.add(Box.createVerticalStrut(5));
+        textPanel.add(priceLabel);
+        textPanel.add(Box.createVerticalStrut(5));
+        textPanel.add(statusLabel);
+        
+        cardPanel.add(imageLabel, BorderLayout.WEST);
+        cardPanel.add(textPanel, BorderLayout.CENTER);
+        
+        return cardPanel;
+    }
+
+    private void selectVehicleCard(JPanel cardPanel, int vehicleId, String vehicleName) {
+        // If there was a previously selected card, reset its color
+        if (selectedCardPanel != null) {
+            selectedCardPanel.setBackground(originalCardColor);
+        }
+        
+        // Update the selected vehicle and card
+        selectedVehicleId = vehicleId;
+        selectedCardPanel = cardPanel;
+        
+        // Change the selected card's color
+        cardPanel.setBackground(selectedCardColor);
+        
+        // Update the selected vehicle label
+        lblSelectedVehicle.setText("Selected Vehicle: " + vehicleName);
+        
+        // Enable the rent and view buttons
+        btnRentVehicle.setEnabled(true);
+        btnViewDetails.setEnabled(true);
+        
+        // Repaint to show the changes
         vehicleCardsContainer.repaint();
-        rs.close();
-        pst.close();
-        con.close();
-    } catch (SQLException e) {
-        JOptionPane.showMessageDialog(this, "Database Error: " + e.getMessage());
     }
-}
-private void selectVehicleCard(JPanel cardPanel, int vehicleId, String vehicleName) {
-    // If there was a previously selected card, reset its color
-    if (selectedCardPanel != null) {
-        selectedCardPanel.setBackground(originalCardColor);
+    // Additional reset method (add this too)
+    private void resetSelection() {
+        selectedVehicleId = -1;
+        selectedCardPanel = null;
+        lblSelectedVehicle.setText("Selected Vehicle: None");
+        btnRentVehicle.setEnabled(false);
+        btnViewDetails.setEnabled(false);
     }
-    
-    // Update the selected vehicle and card
-    selectedVehicleId = vehicleId;
-    selectedCardPanel = cardPanel;
-    
-    // Change the selected card's color
-    cardPanel.setBackground(selectedCardColor);
-    
-    // Update the selected vehicle label
-    lblSelectedVehicle.setText("Selected Vehicle: " + vehicleName);
-    
-    // Enable the rent and view buttons
-    btnRentVehicle.setEnabled(true);
-    btnViewDetails.setEnabled(true);
-    
-    // Repaint to show the changes
-    vehicleCardsContainer.repaint();
-}
-// Additional reset method (add this too)
-private void resetSelection() {
-    selectedVehicleId = -1;
-    selectedCardPanel = null;
-    lblSelectedVehicle.setText("Selected Vehicle: None");
-    btnRentVehicle.setEnabled(false);
-    btnViewDetails.setEnabled(false);
-}
-// Add this variable declaration at the class leve    
+    // Add this variable declaration at the class leve    
     private void btnSearchActionPerformed(java.awt.event.ActionEvent evt) {
         String searchText = txtSearch.getText().trim();
         String filterType = cboFilter.getSelectedItem() != null ? cboFilter.getSelectedItem().toString() : "All";
@@ -260,30 +283,30 @@ private void resetSelection() {
         } catch (Exception e) { e.printStackTrace(); }
         loadVehicleCards();
     }
-private void btnClearActionPerformed(java.awt.event.ActionEvent evt) {
-    txtSearch.setText("");
-    loadVehicleCards();
-    // Log clear action
-    try {
-        String userIp = "Unknown";
-        try { userIp = java.net.InetAddress.getLocalHost().getHostAddress(); } catch (java.net.UnknownHostException e) {}
-        String username = System.getProperty("user.name");
-        Logger.log("CLEAR CLIENT SEARCH", "Cleared client search/filter", username, userIp);
-    } catch (Exception e) { e.printStackTrace(); }
-}
+    private void btnClearActionPerformed(java.awt.event.ActionEvent evt) {
+        txtSearch.setText("");
+        loadVehicleCards();
+        // Log clear action
+        try {
+            String userIp = "Unknown";
+            try { userIp = java.net.InetAddress.getLocalHost().getHostAddress(); } catch (java.net.UnknownHostException e) {}
+            String username = System.getProperty("user.name");
+            Logger.log("CLEAR CLIENT SEARCH", "Cleared client search/filter", username, userIp);
+        } catch (Exception e) { e.printStackTrace(); }
+    }
 
 
-private void cboFilterActionPerformed(java.awt.event.ActionEvent evt) {
-    loadVehicleCards();
-    // Log filter action
-    try {
-        String userIp = "Unknown";
-        try { userIp = java.net.InetAddress.getLocalHost().getHostAddress(); } catch (java.net.UnknownHostException e) {}
-        String username = System.getProperty("user.name");
-        String filterType = cboFilter.getSelectedItem() != null ? cboFilter.getSelectedItem().toString() : "All";
-        Logger.log("FILTER CLIENTS", "Filter selected: '" + filterType + "'", username, userIp);
-    } catch (Exception e) { e.printStackTrace(); }
-}
+    private void cboFilterActionPerformed(java.awt.event.ActionEvent evt) {
+        loadVehicleCards();
+        // Log filter action
+        try {
+            String userIp = "Unknown";
+            try { userIp = java.net.InetAddress.getLocalHost().getHostAddress(); } catch (java.net.UnknownHostException e) {}
+            String username = System.getProperty("user.name");
+            String filterType = cboFilter.getSelectedItem() != null ? cboFilter.getSelectedItem().toString() : "All";
+            Logger.log("FILTER CLIENTS", "Filter selected: '" + filterType + "'", username, userIp);
+        } catch (Exception e) { e.printStackTrace(); }
+    }
     
     /**
      * This method is called from within the constructor to initialize the form.

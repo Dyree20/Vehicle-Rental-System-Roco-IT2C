@@ -51,8 +51,8 @@ public class rentals extends javax.swing.JInternalFrame {
     public rentals() {
         initComponents();
         // Remove border and title bar for borderless internal frame
-        this.setBorder(javax.swing.BorderFactory.createEmptyBorder(0, 0, 0, 0));
-        javax.swing.plaf.basic.BasicInternalFrameUI bi = (javax.swing.plaf.basic.BasicInternalFrameUI) this.getUI();
+        this.setBorder(javax.swing.BorderFactory.createEmptyBorder(0,0,0,0));   
+        javax.swing.plaf.basic.BasicInternalFrameUI bi = (javax.swing.plaf.basic.BasicInternalFrameUI)this.getUI();
         bi.setNorthPane(null);
         setupAdditionalComponents();
         setupTable();
@@ -96,6 +96,27 @@ public class rentals extends javax.swing.JInternalFrame {
         btnReturnVehicle = new JButton("RETURN VEHICLE");
         btnViewDetails = new JButton("VIEW DETAILS");
         
+        // Style buttons
+        btnSearch.setBackground(new Color(153, 0, 0));
+        btnSearch.setForeground(Color.WHITE);
+        btnSearch.setOpaque(true);
+        btnSearch.setBorderPainted(false);
+        
+        btnClear.setBackground(new Color(153, 0, 0));
+        btnClear.setForeground(Color.WHITE);
+        btnClear.setOpaque(true);
+        btnClear.setBorderPainted(false);
+        
+        btnReturnVehicle.setBackground(new Color(153, 0, 0));
+        btnReturnVehicle.setForeground(Color.WHITE);
+        btnReturnVehicle.setOpaque(true);
+        btnReturnVehicle.setBorderPainted(false);
+        
+        btnViewDetails.setBackground(new Color(153, 0, 0));
+        btnViewDetails.setForeground(Color.WHITE);
+        btnViewDetails.setOpaque(true);
+        btnViewDetails.setBorderPainted(false);
+        
         // Add components to panels
         jPanel2.add(txtSearch);
         jPanel2.add(btnSearch);
@@ -132,15 +153,15 @@ public class rentals extends javax.swing.JInternalFrame {
         
         // Create the detail panel with components
         detailPanel = new JPanel(new GridBagLayout());
-        detailPanel.setBackground(new java.awt.Color(110, 0, 0));
+        detailPanel.setBackground(new Color(110, 0, 0));
         
         // Vehicle image label
-        lblVehicleImage = new JLabel();
+        lblVehicleImage = new JLabel("No Image");
         lblVehicleImage.setPreferredSize(new Dimension(200, 150));
-        lblVehicleImage.setBorder(BorderFactory.createLineBorder(Color.BLACK));
-        lblVehicleImage.setHorizontalAlignment(JLabel.CENTER);
-        lblVehicleImage.setText("No Image");
+        lblVehicleImage.setBackground(Color.BLACK);
         lblVehicleImage.setForeground(Color.WHITE);
+        lblVehicleImage.setHorizontalAlignment(JLabel.CENTER);
+        lblVehicleImage.setBorder(BorderFactory.createLineBorder(Color.BLACK));
         
         // Hidden label for vehicle ID
         lblVehicleId = new JLabel();
@@ -165,18 +186,14 @@ public class rentals extends javax.swing.JInternalFrame {
         txtCreatedBy = new JTextField(15);
         
         // Make text fields read-only
-        txtRentalId.setEditable(false);
-        txtVehicle.setEditable(false);
-        txtPlate.setEditable(false);
-        txtClient.setEditable(false);
-        txtPhone.setEditable(false);
-        txtEmail.setEditable(false);
-        txtLicense.setEditable(false);
-        txtStartDate.setEditable(false);
-        txtEndDate.setEditable(false);
-        txtAmount.setEditable(false);
-        txtStatus.setEditable(false);
-        txtCreatedBy.setEditable(false);
+        JTextField[] fields = {txtRentalId, txtVehicle, txtPlate, txtClient, txtPhone, 
+                             txtEmail, txtLicense, txtStartDate, txtEndDate, txtAmount, 
+                             txtStatus, txtCreatedBy};
+        for (JTextField field : fields) {
+            field.setEditable(false);
+            field.setBackground(Color.WHITE);
+            field.setForeground(new Color(51, 51, 51));
+        }
         
         // Add components to detail panel
         GridBagConstraints gbc = new GridBagConstraints();
@@ -192,85 +209,19 @@ public class rentals extends javax.swing.JInternalFrame {
         // Reset gridheight
         gbc.gridheight = 1;
         
-        // Add labels and text fields
-        gbc.gridx = 1;
-        gbc.gridy = 0;
-        detailPanel.add(new JLabel("Rental ID:"), gbc);
-        gbc.gridx = 2;
-        detailPanel.add(txtRentalId, gbc);
+        // Add labels and fields
+        String[] labels = {"Rental ID:", "Vehicle:", "Plate:", "Client:", "Phone:", 
+                          "Email:", "License:", "Start Date:", "End Date:", "Amount:", 
+                          "Status:", "Created By:"};
         
-        gbc.gridx = 1;
-        gbc.gridy = 1;
-        detailPanel.add(new JLabel("Vehicle:"), gbc);
-        gbc.gridx = 2;
-        detailPanel.add(txtVehicle, gbc);
-        
-        gbc.gridx = 1;
-        gbc.gridy = 2;
-        detailPanel.add(new JLabel("Plate:"), gbc);
-        gbc.gridx = 2;
-        detailPanel.add(txtPlate, gbc);
-        
-        gbc.gridx = 3;
-        gbc.gridy = 0;
-        detailPanel.add(new JLabel("Client:"), gbc);
-        gbc.gridx = 4;
-        detailPanel.add(txtClient, gbc);
-        
-        gbc.gridx = 3;
-        gbc.gridy = 1;
-        detailPanel.add(new JLabel("Phone:"), gbc);
-        gbc.gridx = 4;
-        detailPanel.add(txtPhone, gbc);
-        
-        gbc.gridx = 3;
-        gbc.gridy = 2;
-        detailPanel.add(new JLabel("Email:"), gbc);
-        gbc.gridx = 4;
-        detailPanel.add(txtEmail, gbc);
-        
-        gbc.gridx = 1;
-        gbc.gridy = 3;
-        detailPanel.add(new JLabel("License:"), gbc);
-        gbc.gridx = 2;
-        detailPanel.add(txtLicense, gbc);
-        
-        gbc.gridx = 3;
-        gbc.gridy = 3;
-        detailPanel.add(new JLabel("Start Date:"), gbc);
-        gbc.gridx = 4;
-        detailPanel.add(txtStartDate, gbc);
-        
-        gbc.gridx = 1;
-        gbc.gridy = 4;
-        detailPanel.add(new JLabel("End Date:"), gbc);
-        gbc.gridx = 2;
-        detailPanel.add(txtEndDate, gbc);
-        
-        gbc.gridx = 3;
-        gbc.gridy = 4;
-        detailPanel.add(new JLabel("Amount:"), gbc);
-        gbc.gridx = 4;
-        detailPanel.add(txtAmount, gbc);
-        
-        gbc.gridx = 1;
-        gbc.gridy = 5;
-        detailPanel.add(new JLabel("Status:"), gbc);
-        gbc.gridx = 2;
-        detailPanel.add(txtStatus, gbc);
-        
-        gbc.gridx = 3;
-        gbc.gridy = 5;
-        detailPanel.add(new JLabel("Created By:"), gbc);
-        gbc.gridx = 4;
-        detailPanel.add(txtCreatedBy, gbc);
-        
-        // Set all labels and text fields to white foreground
-        Component[] components = detailPanel.getComponents();
-        for (Component component : components) {
-            if (component instanceof JLabel) {
-                ((JLabel) component).setForeground(Color.WHITE);
-            }
+        for (int i = 0; i < labels.length; i++) {
+            JLabel label = new JLabel(labels[i]);
+            label.setForeground(Color.WHITE);
+            gbc.gridx = 1;
+            gbc.gridy = i;
+            detailPanel.add(label, gbc);
+            gbc.gridx = 2;
+            detailPanel.add(fields[i], gbc);
         }
         
         // Add status label to the top panel
@@ -282,7 +233,7 @@ public class rentals extends javax.swing.JInternalFrame {
         
         // Add buttons panel
         JPanel buttonsPanel = new JPanel();
-        buttonsPanel.setBackground(new java.awt.Color(110, 0, 0));
+        buttonsPanel.setBackground(new Color(110, 0, 0));
         jPanel4.add(buttonsPanel, BorderLayout.SOUTH);
         
         // Hide buttons initially

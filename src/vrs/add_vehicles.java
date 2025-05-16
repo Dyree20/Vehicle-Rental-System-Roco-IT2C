@@ -89,171 +89,91 @@ public class add_vehicles extends javax.swing.JInternalFrame {
     // Add ActionListener to btnSearch to filter vehicles
     btnSearch.addActionListener(e -> loadVehiclesFromDB());
     
-    // Restore button appearance
-    add.setBackground(new java.awt.Color(153, 0, 0));
-    add.setForeground(Color.WHITE);
-    add.setOpaque(true);
-    add.setBorderPainted(false);
-    edit.setBackground(new java.awt.Color(153, 0, 0));
-    edit.setForeground(Color.WHITE);
-    edit.setOpaque(true);
-    edit.setBorderPainted(false);
-    delete.setBackground(new java.awt.Color(153, 0, 0));
-    delete.setForeground(Color.WHITE);
-    delete.setOpaque(true);
-    delete.setBorderPainted(false);
+    // Style buttons
+    styleButton(add);
+    styleButton(edit);
+    styleButton(delete);
     
     // Load vehicles from database
     loadVehiclesFromDB();
 }
-    public void addVehicleCard(String name, String type, String price, byte[] imageData) {
-    JPanel card = new JPanel();
-    card.setBackground(new java.awt.Color(153, 0, 0));
-    card.setMaximumSize(new java.awt.Dimension(880, 180));
-    card.setPreferredSize(new java.awt.Dimension(880, 180));
-    card.setBorder(javax.swing.BorderFactory.createLineBorder(java.awt.Color.BLACK));
-    card.setLayout(new java.awt.FlowLayout(FlowLayout.LEFT));
-
-    // Load and scale image
-    javax.swing.JLabel imageLabel = new javax.swing.JLabel();
-    imageLabel.setPreferredSize(new Dimension(150, 100));
-    
-    if (imageData != null && imageData.length > 0) {
-        // Create ImageIcon from byte array
-        ImageIcon icon = new ImageIcon(imageData);
-        Image img = icon.getImage().getScaledInstance(150, 100, Image.SCALE_SMOOTH);
-        imageLabel.setIcon(new ImageIcon(img));
-    } else {
-        // Set a placeholder or "No Image" text
-        imageLabel.setText("No Image");
-        imageLabel.setHorizontalAlignment(JLabel.CENTER);
-        imageLabel.setBorder(BorderFactory.createLineBorder(Color.GRAY));
+    private void styleButton(JButton button) {
+        button.setBackground(new java.awt.Color(153, 0, 0));
+        button.setForeground(Color.WHITE);
+        button.setOpaque(true);
+        button.setBorderPainted(false);
     }
-    
-    card.add(imageLabel);
 
-    // Info Panel
-    JPanel infoPanel = new JPanel();
-    infoPanel.setLayout(new BoxLayout(infoPanel, BoxLayout.Y_AXIS));
-    infoPanel.setBackground(new java.awt.Color(153, 0, 0));
-    JLabel nameLabel = new JLabel("Name: " + name);
-    nameLabel.setForeground(Color.WHITE);
-    nameLabel.setFont(new Font("Arial", Font.PLAIN, 14));
-    JLabel typeLabel = new JLabel("Type: " + type);
-    typeLabel.setForeground(Color.WHITE);
-    typeLabel.setFont(new Font("Arial", Font.PLAIN, 14));
-    JLabel priceLabel = new JLabel("Price: " + price);
-    priceLabel.setForeground(Color.WHITE);
-    priceLabel.setFont(new Font("Arial", Font.PLAIN, 14));
-    infoPanel.add(nameLabel);
-    infoPanel.add(typeLabel);
-    infoPanel.add(priceLabel);
-    card.add(infoPanel);
+    public void addVehicleCard(String name, String type, String price, Object imageSource) {
+        JPanel card = new JPanel();
+        card.setBackground(new java.awt.Color(153, 0, 0));
+        card.setMaximumSize(new java.awt.Dimension(880, 180));
+        card.setPreferredSize(new java.awt.Dimension(880, 180));
+        card.setBorder(javax.swing.BorderFactory.createLineBorder(java.awt.Color.BLACK));
+        card.setLayout(new java.awt.FlowLayout(FlowLayout.LEFT));
 
-    // Mouse click listener to select card
-    card.addMouseListener(new java.awt.event.MouseAdapter() {
-        public void mouseClicked(java.awt.event.MouseEvent evt) {
-            if (selectedCard != null) {
-                selectedCard.setBorder(javax.swing.BorderFactory.createLineBorder(java.awt.Color.BLACK));
-            }
-            selectedCard = card;
-            card.setBorder(javax.swing.BorderFactory.createLineBorder(java.awt.Color.YELLOW, 3));
-        }
-    });
-
-    
-    vehicleListPanel.add(card);
-    vehicleListPanel.revalidate();
-    vehicleListPanel.repaint();
-}
-
-// Overload method to accept string path for backward compatibility
-public void addVehicleCard(String name, String type, String price, String imagePath) {
-    // Create the main card panel
-    JPanel card = new JPanel();
-    card.setBackground(new java.awt.Color(153, 0, 0));
-    card.setMaximumSize(new java.awt.Dimension(880, 180));
-    card.setPreferredSize(new java.awt.Dimension(880, 180));
-    card.setBorder(javax.swing.BorderFactory.createLineBorder(java.awt.Color.BLACK));
-    card.setLayout(new BorderLayout(10, 10));
-    
-    // Create image panel
-    JPanel imagePanel = new JPanel();
-    imagePanel.setBackground(new java.awt.Color(153, 0, 0));
-    imagePanel.setPreferredSize(new Dimension(180, 160));
-    imagePanel.setLayout(new BorderLayout());
-    
-    // Create image label
-    JLabel imageLabel = new JLabel();
-    imageLabel.setHorizontalAlignment(JLabel.CENTER);
-    imageLabel.setPreferredSize(new Dimension(160, 140));
-    
-    // Load and display image if path is valid
-    if (imagePath != null && !imagePath.isEmpty()) {
+        // Load and scale image
+        javax.swing.JLabel imageLabel = new javax.swing.JLabel();
+        imageLabel.setPreferredSize(new Dimension(150, 100));
+        
         try {
-            // Load the image from the file path
-            ImageIcon icon = new ImageIcon(imagePath);
-            Image img = icon.getImage().getScaledInstance(150, 100, Image.SCALE_SMOOTH);
-            imageLabel.setIcon(new ImageIcon(img));
-        } catch (Exception e) {
-            System.out.println("Error loading image: " + e.getMessage());
-            imageLabel.setText("No Image");
-            imageLabel.setForeground(Color.WHITE);
-        }
-    } else {
-        imageLabel.setText("No Image");
-        imageLabel.setForeground(Color.WHITE);
-    }
-    
-    // Add image label to image panel
-    imagePanel.add(imageLabel, BorderLayout.CENTER);
-    
-    // Create info panel
-    JPanel infoPanel = new JPanel();
-    infoPanel.setBackground(new java.awt.Color(153, 0, 0));
-    infoPanel.setLayout(new BoxLayout(infoPanel, BoxLayout.Y_AXIS));
-    
-    // Add text info with spacing
-    JLabel nameLabel = new JLabel("Name: " + name);
-    nameLabel.setForeground(Color.WHITE);
-    nameLabel.setFont(new Font("Arial", Font.BOLD, 14));
-    
-    JLabel typeLabel = new JLabel("Type: " + type);
-    typeLabel.setForeground(new Color(220, 220, 220));
-    typeLabel.setFont(new Font("Arial", Font.PLAIN, 14));
-    
-    JLabel priceLabel = new JLabel("Price: " + price);
-    priceLabel.setForeground(new Color(200, 255, 200));
-    priceLabel.setFont(new Font("Arial", Font.PLAIN, 14));
-    
-    // Add components to info panel with spacing
-    infoPanel.add(Box.createVerticalStrut(20)); // Add top spacing
-    infoPanel.add(nameLabel);
-    infoPanel.add(Box.createVerticalStrut(10)); // Add spacing between labels
-    infoPanel.add(typeLabel);
-    infoPanel.add(Box.createVerticalStrut(10)); // Add spacing between labels
-    infoPanel.add(priceLabel);
-    
-    // Add panels to card
-    card.add(imagePanel, BorderLayout.WEST);
-    card.add(infoPanel, BorderLayout.CENTER);
-    
-    // Add click listener
-    card.addMouseListener(new java.awt.event.MouseAdapter() {
-        public void mouseClicked(java.awt.event.MouseEvent evt) {
-            if (selectedCard != null) {
-                selectedCard.setBorder(javax.swing.BorderFactory.createLineBorder(java.awt.Color.BLACK));
+            ImageIcon icon = null;
+            if (imageSource instanceof byte[]) {
+                icon = new ImageIcon((byte[]) imageSource);
+            } else if (imageSource instanceof String) {
+                icon = new ImageIcon((String) imageSource);
             }
-            selectedCard = card;
-            card.setBorder(javax.swing.BorderFactory.createLineBorder(java.awt.Color.YELLOW, 3));
+            
+            if (icon != null) {
+                Image img = icon.getImage().getScaledInstance(150, 100, Image.SCALE_SMOOTH);
+                imageLabel.setIcon(new ImageIcon(img));
+            } else {
+                imageLabel.setText("No Image");
+                imageLabel.setHorizontalAlignment(JLabel.CENTER);
+                imageLabel.setBorder(BorderFactory.createLineBorder(Color.GRAY));
+            }
+        } catch (Exception e) {
+            imageLabel.setText("No Image");
+            imageLabel.setHorizontalAlignment(JLabel.CENTER);
+            imageLabel.setBorder(BorderFactory.createLineBorder(Color.GRAY));
         }
-    });
-    
-    // Add to list panel and refresh
-    vehicleListPanel.add(card);
-    vehicleListPanel.revalidate();
-    vehicleListPanel.repaint();
-}
+        
+        card.add(imageLabel);
+
+        // Info Panel
+        JPanel infoPanel = new JPanel();
+        infoPanel.setLayout(new BoxLayout(infoPanel, BoxLayout.Y_AXIS));
+        infoPanel.setBackground(new java.awt.Color(153, 0, 0));
+        
+        JLabel nameLabel = new JLabel("Name: " + name);
+        JLabel typeLabel = new JLabel("Type: " + type);
+        JLabel priceLabel = new JLabel("Price: " + price);
+        
+        JLabel[] labels = {nameLabel, typeLabel, priceLabel};
+        for (JLabel label : labels) {
+            label.setForeground(Color.WHITE);
+            label.setFont(new Font("Arial", Font.PLAIN, 14));
+            infoPanel.add(label);
+        }
+        
+        card.add(infoPanel);
+
+        // Mouse click listener to select card
+        card.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                if (selectedCard != null) {
+                    selectedCard.setBorder(javax.swing.BorderFactory.createLineBorder(java.awt.Color.BLACK));
+                }
+                selectedCard = card;
+                card.setBorder(javax.swing.BorderFactory.createLineBorder(java.awt.Color.YELLOW, 3));
+            }
+        });
+
+        vehicleListPanel.add(card);
+        vehicleListPanel.revalidate();
+        vehicleListPanel.repaint();
+    }
+
     private boolean addVehicleToDB(String make, String model, String year, String plate, String rate, String status, String vType, File imageFile) {
     try {
         Connection conn = new dbConnector().getConnection();
