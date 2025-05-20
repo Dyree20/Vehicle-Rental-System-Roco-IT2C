@@ -19,6 +19,7 @@ import javax.swing.table.DefaultTableModel;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import config.Logger;
+import javax.swing.SwingUtilities;
 
 /**
  *
@@ -26,7 +27,7 @@ import config.Logger;
  */
 public class passwordResetRequests extends javax.swing.JInternalFrame {
 private int selectedRequestId = -1;
-private String selectedUsername = null;
+private String selectedEmail = null;
     /**
      * Creates new form passwordResetRequests
      */
@@ -42,8 +43,8 @@ private String selectedUsername = null;
     if (!e.getValueIsAdjusting() && requestsTable.getSelectedRow() != -1) {
         int row = requestsTable.getSelectedRow();
         selectedRequestId = Integer.parseInt(requestsTable.getModel().getValueAt(row, 0).toString());
-        selectedUsername = requestsTable.getModel().getValueAt(row, 1).toString();
-        System.out.println("Selected: " + selectedRequestId + ", " + selectedUsername);
+        selectedEmail = requestsTable.getModel().getValueAt(row, 1).toString();
+        System.out.println("Selected: " + selectedRequestId + ", " + selectedEmail);
     }
 });
 approveBtn.addActionListener(e -> {
@@ -53,10 +54,6 @@ approveBtn.addActionListener(e -> {
 denyBtn.addActionListener(e -> {
     System.out.println("Deny clicked for ID: " + selectedRequestId);
     denyRequest();
-});
-setPasswordBtn.addActionListener(e -> {
-    System.out.println("Set password clicked for ID: " + selectedRequestId);
-    setNewPassword();
 });
     
     }
@@ -73,7 +70,7 @@ private void loadRequests() {
         while (rs.next()) {
             model.addRow(new Object[]{
                 rs.getInt("pr_id"),
-                rs.getString("pr_username"),
+                rs.getString("pr_email"),
                 rs.getTimestamp("pr_date"),
                 rs.getString("pr_status")
             });
@@ -96,16 +93,16 @@ private void requestsTableMouseClicked(java.awt.event.MouseEvent evt) {
     if (row != -1) {
         try {
             Object idObj = requestsTable.getValueAt(row, 0);
-            Object usernameObj = requestsTable.getValueAt(row, 1);
+            Object emailObj = requestsTable.getValueAt(row, 1);
             
-            System.out.println("ID Object: " + idObj + ", Username Object: " + usernameObj);
+            System.out.println("ID Object: " + idObj + ", Email Object: " + emailObj);
             
             if (idObj != null) {
                 selectedRequestId = Integer.parseInt(idObj.toString());
-                selectedUsername = (usernameObj != null) ? usernameObj.toString() : "";
+                selectedEmail = (emailObj != null) ? emailObj.toString() : "";
                 
                 System.out.println("Set selected ID: " + selectedRequestId);
-                System.out.println("Set selected username: " + selectedUsername);
+                System.out.println("Set selected email: " + selectedEmail);
             }
         } catch (Exception e) {
             System.out.println("Error in table selection: " + e.getMessage());
@@ -120,9 +117,6 @@ private void approveBtnActionPerformed(java.awt.event.ActionEvent evt) {
 }
 private void denyBtnActionPerformed(java.awt.event.ActionEvent evt) {
     denyRequest();
-}
-private void setPasswordBtnActionPerformed(java.awt.event.ActionEvent evt) {
-    setNewPassword();
 }
 
 private void approveRequest() {
@@ -145,7 +139,7 @@ private void approveRequest() {
             String userIp = "Unknown";
             try { userIp = InetAddress.getLocalHost().getHostAddress(); } catch (UnknownHostException e) {}
             String username = System.getProperty("user.name");
-            Logger.log("Approve Password Reset", "Request ID: " + selectedRequestId + ", User: " + selectedUsername, username, userIp);
+            Logger.log("Approve Password Reset", "Request ID: " + selectedRequestId + ", User: " + selectedEmail, username, userIp);
             loadRequests();
         } else {
             JOptionPane.showMessageDialog(this, "Failed to approve request.");
@@ -179,7 +173,7 @@ private void denyRequest() {
             String userIp = "Unknown";
             try { userIp = InetAddress.getLocalHost().getHostAddress(); } catch (UnknownHostException e) {}
             String username = System.getProperty("user.name");
-            Logger.log("Deny Password Reset", "Request ID: " + selectedRequestId + ", User: " + selectedUsername, username, userIp);
+            Logger.log("Deny Password Reset", "Request ID: " + selectedRequestId + ", User: " + selectedEmail, username, userIp);
             loadRequests();
         } else {
             JOptionPane.showMessageDialog(this, "Failed to deny request.");
@@ -194,73 +188,30 @@ private void denyRequest() {
     }
 }
 
-private void setNewPassword() {
-    if (selectedRequestId == -1) {
-        JOptionPane.showMessageDialog(this, "Please select a request first.");
-        return;
-    }
+private String getUsernameByEmail(String email) throws SQLException {
+    Connection conn = new dbConnector().getConnection();
+    String sql = "SELECT username FROM tbl_users WHERE email = ?";
+    PreparedStatement stmt = conn.prepareStatement(sql);
+    stmt.setString(1, email);
+    ResultSet rs = stmt.executeQuery();
     
-    try {
-        Connection conn = new dbConnector().getConnection();
-        String checkQuery = "SELECT pr_status FROM tbl_password_reset WHERE pr_id = ?";
-        PreparedStatement checkPst = conn.prepareStatement(checkQuery);
-        checkPst.setInt(1, selectedRequestId);
-        
-        ResultSet rs = checkPst.executeQuery();
-        if (rs.next()) {
-            String status = rs.getString("pr_status");
-            
-            if (!"Approved".equals(status)) {
-                JOptionPane.showMessageDialog(this, "This request must be approved before setting a new password.");
-                rs.close();
-                checkPst.close();
-                conn.close();
-                return;
-            }
-            
-            String newPassword = JOptionPane.showInputDialog(this, "Enter new password for user: " + selectedUsername);
-            if (newPassword != null && !newPassword.isEmpty()) {
-                String hashPassword = hashPassword(newPassword);
-                
-                String updateUserQuery = "UPDATE tbl_users SET u_password = ? WHERE u_username = ?";
-                PreparedStatement updateUserPst = conn.prepareStatement(updateUserQuery);
-                updateUserPst.setString(1, hashPassword);
-                updateUserPst.setString(2, selectedUsername);
-                
-                int userResult = updateUserPst.executeUpdate();
-                
-                String updateRequestQuery = "UPDATE tbl_password_reset SET pr_status = 'Completed', pr_new_password = ? WHERE pr_id = ?";
-                PreparedStatement updateRequestPst = conn.prepareStatement(updateRequestQuery);
-                updateRequestPst.setString(1, hashPassword);
-                updateRequestPst.setInt(2, selectedRequestId);
-                
-                int requestResult = updateRequestPst.executeUpdate();
-                
-                if (userResult > 0 && requestResult > 0) {
-                    JOptionPane.showMessageDialog(this, "Password has been reset successfully.");
-                    // Logging
-                    String userIp = "Unknown";
-                    try { userIp = InetAddress.getLocalHost().getHostAddress(); } catch (UnknownHostException e) {}
-                    String username = System.getProperty("user.name");
-                    Logger.log("Set Password", "Request ID: " + selectedRequestId + ", User: " + selectedUsername, username, userIp);
-                    loadRequests();
-                } else {
-                    JOptionPane.showMessageDialog(this, "Failed to reset password.");
-                }
-                
-                updateUserPst.close();
-                updateRequestPst.close();
-            }
-        }
-        
-        rs.close();
-        checkPst.close();
-        conn.close();
-    } catch (SQLException ex) {
-        JOptionPane.showMessageDialog(this, 
-                "Database error: " + ex.getMessage(), 
-                "Error", JOptionPane.ERROR_MESSAGE);
+    if (rs.next()) {
+        return rs.getString("username");
     }
+    throw new SQLException("User not found");
+}
+
+private String getRequestStatus(int requestId) throws SQLException {
+    Connection conn = new dbConnector().getConnection();
+    String sql = "SELECT pr_status FROM tbl_password_reset WHERE pr_id = ?";
+    PreparedStatement stmt = conn.prepareStatement(sql);
+    stmt.setInt(1, requestId);
+    ResultSet rs = stmt.executeQuery();
+    
+    if (rs.next()) {
+        return rs.getString("pr_status");
+    }
+    return null;
 }
 
 private String hashPassword(String password) {
@@ -291,7 +242,6 @@ private String hashPassword(String password) {
         requestsTable = new javax.swing.JTable();
         approveBtn = new javax.swing.JButton();
         denyBtn = new javax.swing.JButton();
-        setPasswordBtn = new javax.swing.JButton();
 
         getContentPane().setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
 
@@ -305,7 +255,7 @@ private String hashPassword(String password) {
                 {null, null, null, null}
             },
             new String [] {
-                "Request ID", "User", "Request Date", "Status"
+                "Title 1", "Title 2", "Title 3", "Title 4"
             }
         ));
         jScrollPane1.setViewportView(requestsTable);
@@ -315,9 +265,6 @@ private String hashPassword(String password) {
 
         denyBtn.setFont(new java.awt.Font("Microsoft YaHei", 3, 11)); // NOI18N
         denyBtn.setText("DENY");
-
-        setPasswordBtn.setFont(new java.awt.Font("Microsoft YaHei", 3, 11)); // NOI18N
-        setPasswordBtn.setText("CHANGE PASSWORD");
 
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
@@ -331,8 +278,6 @@ private String hashPassword(String password) {
                 .addComponent(approveBtn, javax.swing.GroupLayout.PREFERRED_SIZE, 88, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(18, 18, 18)
                 .addComponent(denyBtn, javax.swing.GroupLayout.PREFERRED_SIZE, 88, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(18, 18, 18)
-                .addComponent(setPasswordBtn, javax.swing.GroupLayout.PREFERRED_SIZE, 159, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(0, 0, Short.MAX_VALUE))
         );
         jPanel1Layout.setVerticalGroup(
@@ -343,8 +288,7 @@ private String hashPassword(String password) {
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                     .addComponent(approveBtn, javax.swing.GroupLayout.DEFAULT_SIZE, 32, Short.MAX_VALUE)
-                    .addComponent(denyBtn, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(setPasswordBtn, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                    .addComponent(denyBtn, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                 .addContainerGap())
         );
 
@@ -360,6 +304,5 @@ private String hashPassword(String password) {
     private javax.swing.JPanel jPanel1;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JTable requestsTable;
-    private javax.swing.JButton setPasswordBtn;
     // End of variables declaration//GEN-END:variables
 }

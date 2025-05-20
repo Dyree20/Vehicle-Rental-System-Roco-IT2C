@@ -167,6 +167,18 @@ private void loadVehicleCards(String searchText, String selectedType) {
             priceLabel.setForeground(Color.WHITE);
             priceLabel.setFont(new Font("Tahoma", Font.PLAIN, 12));
             
+            JLabel statusLabel = new JLabel("Status: " + status);
+            if (status.equalsIgnoreCase("available")) {
+                statusLabel.setForeground(new Color(0, 153, 0)); // Green
+            } else if (status.equalsIgnoreCase("rented")) {
+                statusLabel.setForeground(Color.RED);
+            } else if (status.equalsIgnoreCase("maintenance")) {
+                statusLabel.setForeground(new Color(255, 140, 0)); // Orange
+            } else {
+                statusLabel.setForeground(Color.GRAY);
+            }
+            statusLabel.setFont(new Font("Tahoma", Font.BOLD, 12));
+            
             // Add text labels to the text panel
             textPanel.add(Box.createVerticalStrut(20)); // Add some top space
             textPanel.add(nameLabel);
@@ -174,6 +186,8 @@ private void loadVehicleCards(String searchText, String selectedType) {
             textPanel.add(typeYearLabel);
             textPanel.add(Box.createVerticalStrut(10)); // Add space between labels
             textPanel.add(priceLabel);
+            textPanel.add(Box.createVerticalStrut(5));
+            textPanel.add(statusLabel);
             
             // Add image and text panels to the card
             cardPanel.add(imageLabel, BorderLayout.WEST);

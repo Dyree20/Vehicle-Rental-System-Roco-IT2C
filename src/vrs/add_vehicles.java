@@ -104,7 +104,7 @@ public class add_vehicles extends javax.swing.JInternalFrame {
         button.setBorderPainted(false);
     }
 
-    public void addVehicleCard(String name, String type, String price, Object imageSource) {
+    public void addVehicleCard(String name, String type, String price, String status, Object imageSource) {
         JPanel card = new JPanel();
         card.setBackground(new java.awt.Color(153, 0, 0));
         card.setMaximumSize(new java.awt.Dimension(880, 180));
@@ -148,6 +148,22 @@ public class add_vehicles extends javax.swing.JInternalFrame {
         JLabel nameLabel = new JLabel("Name: " + name);
         JLabel typeLabel = new JLabel("Type: " + type);
         JLabel priceLabel = new JLabel("Price: " + price);
+        JLabel statusLabel = new JLabel("Status: " + status);
+        if (status != null) {
+            if (status.equalsIgnoreCase("available")) {
+                statusLabel.setForeground(new Color(0, 153, 0)); // Green
+            } else if (status.equalsIgnoreCase("rented")) {
+                statusLabel.setForeground(Color.RED);
+            } else if (status.equalsIgnoreCase("maintenance")) {
+                statusLabel.setForeground(new Color(255, 140, 0)); // Orange
+            } else {
+                statusLabel.setForeground(Color.GRAY);
+            }
+        } else {
+            statusLabel.setForeground(Color.GRAY);
+        }
+        statusLabel.setFont(new Font("Arial", Font.BOLD, 14));
+        infoPanel.add(statusLabel);
         
         JLabel[] labels = {nameLabel, typeLabel, priceLabel};
         for (JLabel label : labels) {
@@ -305,11 +321,12 @@ public class add_vehicles extends javax.swing.JInternalFrame {
             String plate = rs.getString("v_plate");
             String rate = rs.getString("v_rate");
             String vType = rs.getString("v_type");
+            String status = rs.getString("v_status");
             String cardName = make + " " + model;
             String cardType = vType + " | Year: " + year + ", Plate: " + plate;
             String cardPrice = "₱" + rate + " per day";
             byte[] imageData = rs.getBytes("v_image");
-            addVehicleCard(cardName, cardType, cardPrice, imageData);
+            addVehicleCard(cardName, cardType, cardPrice, status, imageData);
         }
         rs.close();
         pst.close();
@@ -481,7 +498,6 @@ public class add_vehicles extends javax.swing.JInternalFrame {
     panel.add(rateField, gbc);
     gbc.gridx = 0; gbc.gridy++;
     panel.add(new JLabel("Status:"), gbc);
-    gbc.gridx = 1;
     JComboBox<String> statusCombo = new JComboBox<>(new String[]{"Available", "Rented", "Maintenance"});
     panel.add(statusCombo, gbc);
     gbc.gridx = 0; gbc.gridy++;
@@ -574,7 +590,7 @@ public class add_vehicles extends javax.swing.JInternalFrame {
             }
             
             // Add to UI
-            addVehicleCard(cardName, cardType, cardPrice, imagePath);
+            addVehicleCard(cardName, cardType, cardPrice, status, imagePath);
             dialog.dispose();
             
             // Refresh vehicle list from database (optional)

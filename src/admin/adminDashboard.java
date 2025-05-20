@@ -25,6 +25,8 @@ import vrs.user_logs;
 import config.Logger;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import javax.swing.JInternalFrame;
+import vrs.v_clients;
 
 /**
  *
@@ -59,7 +61,11 @@ public class adminDashboard extends javax.swing.JFrame {
     }
 });
         
-        
+        a_clients.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                a_clientsActionPerformed(evt);
+            }
+        });
     }
     
     private void resetButtonColors() {
@@ -77,6 +83,7 @@ public class adminDashboard extends javax.swing.JFrame {
     }
     
 private void a_usersActionPerformed(java.awt.event.ActionEvent evt) {
+    jLabel2.setVisible(false);
     String userIp = "Unknown";
     try { userIp = InetAddress.getLocalHost().getHostAddress(); } catch (UnknownHostException e) {}
     Logger.log("Button Click", "Admin clicked: Users", currentUsername, userIp);
@@ -229,6 +236,7 @@ public void setUsername(String username) {
         reset_requests = new javax.swing.JButton();
         welcomePanel = new javax.swing.JPanel();
         logs = new javax.swing.JButton();
+        a_clients = new javax.swing.JButton();
         mhome = new javax.swing.JDesktopPane();
 
         jMenu1.setText("jMenu1");
@@ -236,14 +244,14 @@ public void setUsername(String username) {
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
         jPanel1.setBackground(new java.awt.Color(255, 51, 51));
-        jPanel1.setLayout(new java.awt.BorderLayout());
+        jPanel1.setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
 
         jPanel3.setBackground(new java.awt.Color(255, 153, 51));
-        jPanel3.setLayout(new java.awt.BorderLayout());
+        jPanel3.setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
 
         jLabel1.setFont(new java.awt.Font("Tahoma", 3, 36)); // NOI18N
         jLabel1.setText("ADMIN PANEL");
-        jPanel3.add(jLabel1, java.awt.BorderLayout.CENTER);
+        jPanel3.add(jLabel1, new org.netbeans.lib.awtextra.AbsoluteConstraints(160, 0, 504, 85));
 
         logout.setText("LOGOUT");
         logout.addMouseListener(new java.awt.event.MouseAdapter() {
@@ -256,13 +264,13 @@ public void setUsername(String username) {
                 logoutActionPerformed(evt);
             }
         });
-        jPanel3.add(logout, java.awt.BorderLayout.EAST);
+        jPanel3.add(logout, new org.netbeans.lib.awtextra.AbsoluteConstraints(960, 10, 120, 40));
 
-        jPanel1.add(jPanel3, java.awt.BorderLayout.NORTH);
+        jPanel1.add(jPanel3, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 0, 1090, -1));
 
         jLabel2.setIcon(new javax.swing.ImageIcon(getClass().getResource("/images/download-removebg-preview.png"))); // NOI18N
         jLabel2.setText("jLabel2");
-        jPanel1.add(jLabel2, java.awt.BorderLayout.CENTER);
+        jPanel1.add(jLabel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(370, 230, 450, 280));
 
         jPanel2.setBackground(new java.awt.Color(255, 153, 0));
 
@@ -337,6 +345,9 @@ public void setUsername(String username) {
             }
         });
 
+        a_clients.setFont(new java.awt.Font("Microsoft YaHei", 3, 12)); // NOI18N
+        a_clients.setText("VIEW CLIENTS");
+
         javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
         jPanel2.setLayout(jPanel2Layout);
         jPanel2Layout.setHorizontalGroup(
@@ -361,7 +372,9 @@ public void setUsername(String username) {
                         .addGap(0, 0, Short.MAX_VALUE))
                     .addGroup(jPanel2Layout.createSequentialGroup()
                         .addContainerGap()
-                        .addComponent(logs, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
+                        .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(logs, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(a_clients, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))))
                 .addContainerGap())
         );
         jPanel2Layout.setVerticalGroup(
@@ -381,29 +394,44 @@ public void setUsername(String username) {
                 .addComponent(reset_requests, javax.swing.GroupLayout.PREFERRED_SIZE, 50, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addComponent(logs, javax.swing.GroupLayout.PREFERRED_SIZE, 49, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addComponent(a_clients, javax.swing.GroupLayout.PREFERRED_SIZE, 50, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap())
         );
 
-        jPanel1.add(jPanel2, java.awt.BorderLayout.WEST);
-        jPanel1.add(mhome, java.awt.BorderLayout.CENTER);
+        jPanel1.add(jPanel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 80, 150, 720));
+
+        mhome.setBackground(new java.awt.Color(255, 51, 51));
+
+        javax.swing.GroupLayout mhomeLayout = new javax.swing.GroupLayout(mhome);
+        mhome.setLayout(mhomeLayout);
+        mhomeLayout.setHorizontalGroup(
+            mhomeLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 933, Short.MAX_VALUE)
+        );
+        mhomeLayout.setVerticalGroup(
+            mhomeLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 720, Short.MAX_VALUE)
+        );
+
+        jPanel1.add(mhome, new org.netbeans.lib.awtextra.AbsoluteConstraints(150, 80, 933, 720));
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, 1085, javax.swing.GroupLayout.PREFERRED_SIZE)
+            .addComponent(jPanel1, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 1085, javax.swing.GroupLayout.PREFERRED_SIZE)
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
-                .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, 721, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(0, 0, Short.MAX_VALUE))
+            .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
         );
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
     private void vehicles_dashActionPerformed(java.awt.event.ActionEvent evt) {
+        jLabel2.setVisible(false);
         String userIp = "Unknown";
         try { userIp = InetAddress.getLocalHost().getHostAddress(); } catch (UnknownHostException e) {}
         Logger.log("Button Click", "Admin clicked: Vehicles", currentUsername, userIp);
@@ -414,6 +442,7 @@ public void setUsername(String username) {
     }
 
     private void dashboardActionPerformed(java.awt.event.ActionEvent evt) {
+        jLabel2.setVisible(false);
         String userIp = "Unknown";
         try { userIp = InetAddress.getLocalHost().getHostAddress(); } catch (UnknownHostException e) {}
         Logger.log("Button Click", "Admin clicked: Dashboard", currentUsername, userIp);
@@ -432,6 +461,7 @@ public void setUsername(String username) {
     }//GEN-LAST:event_p_approvalMouseClicked
 
     private void p_approvalActionPerformed(java.awt.event.ActionEvent evt) {
+        jLabel2.setVisible(false);
         String userIp = "Unknown";
         try { userIp = InetAddress.getLocalHost().getHostAddress(); } catch (UnknownHostException e) {}
         Logger.log("Button Click", "Admin clicked: Approval", currentUsername, userIp);
@@ -441,7 +471,7 @@ public void setUsername(String username) {
         showInternalFrame(new Approval());
     }
 
-    private void logoutMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_logoutMouseClicked
+    private void logoutMouseClicked(java.awt.event.MouseEvent evt) {                                    
         String userIp = "Unknown";
         try { userIp = InetAddress.getLocalHost().getHostAddress(); } catch (UnknownHostException e) {}
         Logger.logLogout(currentUsername, userIp);
@@ -460,6 +490,7 @@ public void setUsername(String username) {
     }//GEN-LAST:event_a_usersMouseClicked
 
     private void logsActionPerformed(java.awt.event.ActionEvent evt) {
+        jLabel2.setVisible(false);
         String userIp = "Unknown";
         try { userIp = InetAddress.getLocalHost().getHostAddress(); } catch (UnknownHostException e) {}
         Logger.log("Button Click", "Admin clicked: Logs", currentUsername, userIp);
@@ -470,6 +501,7 @@ public void setUsername(String username) {
     }
 
     private void reset_requestsActionPerformed(java.awt.event.ActionEvent evt) {
+        jLabel2.setVisible(false);
         String userIp = "Unknown";
         try { userIp = InetAddress.getLocalHost().getHostAddress(); } catch (UnknownHostException e) {}
         Logger.log("Button Click", "Admin clicked: Reset Requests", currentUsername, userIp);
@@ -479,7 +511,25 @@ public void setUsername(String username) {
         showInternalFrame(new passwordResetRequests());
     }
 
-    
+    private void a_clientsActionPerformed(java.awt.event.ActionEvent evt) {
+        jLabel2.setVisible(false);
+        boolean found = false;
+        for (JInternalFrame frame : mhome.getAllFrames()) {
+            if (frame instanceof v_clients) {
+                frame.moveToFront();
+                frame.setVisible(true);
+                try { frame.setSelected(true); } catch (Exception e) {}
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            v_clients vc = new v_clients();
+            mhome.add(vc);
+            vc.setVisible(true);
+            try { vc.setSelected(true); } catch (Exception e) {}
+        }
+    }
 
     /**
      * @param args the command line arguments
@@ -493,6 +543,7 @@ public void setUsername(String username) {
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JButton a_clients;
     private javax.swing.JButton a_users;
     private javax.swing.JButton dashboard;
     private javax.swing.JLabel jLabel1;

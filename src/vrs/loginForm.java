@@ -190,20 +190,38 @@ private boolean userExists(String username) {
         return false;
     }
 }
-private boolean submitPasswordResetRequest(String username) {
+private boolean userExistsByEmail(String email) {
     try {
-        System.out.println("Attempting to submit password reset request for: " + username);
+        Connection con = new dbConnector().getConnection();
+        PreparedStatement pst = con.prepareStatement("SELECT u_id FROM tbl_users WHERE LOWER(u_email) = LOWER(?)");
+        
+        pst.setString(1, email);
+        ResultSet rs = pst.executeQuery();
+        boolean exists = rs.next();
+        
+        rs.close();
+        pst.close();
+        con.close();
+        return exists;
+    } catch (SQLException e) {
+        System.out.println("Database error: " + e.getMessage());
+        return false;
+    }
+}
+private boolean submitPasswordResetRequest(String email) {
+    try {
+        System.out.println("Attempting to submit password reset request for email: " + email);
         Connection con = new dbConnector().getConnection();
         if (con == null) {
             System.out.println("Connection is null!");
             return false;
         }
         
-        String sql = "INSERT INTO tbl_password_reset (pr_username, pr_status, pr_date) VALUES (?, 'Pending', NOW())";
+        String sql = "INSERT INTO tbl_password_reset (pr_email, pr_status, pr_date) VALUES (?, 'Pending', NOW())";
         System.out.println("SQL query: " + sql);
         
         PreparedStatement pst = con.prepareStatement(sql);
-        pst.setString(1, username);
+        pst.setString(1, email);
         
         int result = pst.executeUpdate();
         System.out.println("Insert result: " + result);
@@ -218,22 +236,103 @@ private boolean submitPasswordResetRequest(String username) {
     }
 }
 
-
+private String getPasswordResetRequestStatus(String email) {
+    try {
+        Connection con = new dbConnector().getConnection();
+        String sql = "SELECT pr_status FROM tbl_password_reset WHERE pr_email = ? ORDER BY pr_date DESC LIMIT 1";
+        PreparedStatement pst = con.prepareStatement(sql);
+        pst.setString(1, email);
+        ResultSet rs = pst.executeQuery();
+        if (rs.next()) {
+            String status = rs.getString("pr_status");
+            rs.close();
+            pst.close();
+            con.close();
+            return status;
+        }
+        rs.close();
+        pst.close();
+        con.close();
+    } catch (SQLException e) {
+        System.out.println("Database error: " + e.getMessage());
+    }
+    return null;
+}
 
 private void forgot_passMouseClicked(java.awt.event.MouseEvent evt) {
-    String username = JOptionPane.showInputDialog(this, "Enter your username:", "Password Reset Request", JOptionPane.QUESTION_MESSAGE);
-    if (username != null && !username.trim().isEmpty()) {
+    String email = JOptionPane.showInputDialog(this, "Enter your email:", "Password Reset Request", JOptionPane.QUESTION_MESSAGE);
+    if (email != null && !email.trim().isEmpty()) {
         // Check if user exists
-        if (userExists(username)) {
-            // Send reset request
-            if (submitPasswordResetRequest(username)) {
+        if (userExistsByEmail(email)) {
+            String reqStatus = getPasswordResetRequestStatus(email);
+            if (reqStatus != null) {
+                if ("Approved".equalsIgnoreCase(reqStatus)) {
+                    // Proceed to security questions and password reset
+                    SecurityQuestionsVerificationDialog verificationDialog = new SecurityQuestionsVerificationDialog(this, email);
+                    verificationDialog.setVisible(true);
+                    if (verificationDialog.isVerified()) {
+                        NewPasswordDialog passwordDialog = new NewPasswordDialog(this);
+                        passwordDialog.setVisible(true);
+                        String newPassword = passwordDialog.getNewPassword();
+                        if (newPassword != null) {
+                            // Update password in database
+                            updateUserPasswordByEmail(email, newPassword);
+                            // Mark request as completed
+                            markPasswordResetRequestCompleted(email);
+                            JOptionPane.showMessageDialog(this, "Password has been reset successfully.", "Success", JOptionPane.INFORMATION_MESSAGE);
+                        }
+                    }
+                    return;
+                } else if ("Pending".equalsIgnoreCase(reqStatus)) {
+                    JOptionPane.showMessageDialog(this, "A password reset request for this email is still pending admin approval.", "Request Pending", JOptionPane.INFORMATION_MESSAGE);
+                    return;
+                } else if ("Denied".equalsIgnoreCase(reqStatus)) {
+                    JOptionPane.showMessageDialog(this, "Your previous password reset request was denied. Please contact admin or try again later.", "Request Denied", JOptionPane.INFORMATION_MESSAGE);
+                    return;
+                } else if ("Completed".equalsIgnoreCase(reqStatus)) {
+                    // Allow new request if last one is completed
+                } else {
+                    // Unknown status, allow new request
+                }
+            }
+            // No request or last one completed, allow new request
+            if (submitPasswordResetRequest(email)) {
                 JOptionPane.showMessageDialog(this, "Password reset request submitted.\nPlease wait for admin approval.", "Request Submitted", JOptionPane.INFORMATION_MESSAGE);
             } else {
                 JOptionPane.showMessageDialog(this, "Failed to submit request. Try again later.", "Error", JOptionPane.ERROR_MESSAGE);
             }
         } else {
-            JOptionPane.showMessageDialog(this, "Username not found.", "Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Email not found.", "Error", JOptionPane.ERROR_MESSAGE);
         }
+    }
+}
+
+private void updateUserPasswordByEmail(String email, String plainPassword) {
+    String hashedPassword = hashPassword(plainPassword);
+    String sql = "UPDATE tbl_users SET u_password = ? WHERE u_email = ?";
+    try (Connection con = new dbConnector().getConnection();
+         PreparedStatement pst = con.prepareStatement(sql)) {
+        pst.setString(1, hashedPassword);
+        pst.setString(2, email);
+        int result = pst.executeUpdate();
+        if (result > 0) {
+            System.out.println("Password updated successfully for " + email);
+        } else {
+            System.out.println("Failed to update password. User not found.");
+        }
+    } catch (SQLException e) {
+        System.out.println("Database error: " + e.getMessage());
+    }
+}
+
+private void markPasswordResetRequestCompleted(String email) {
+    String sql = "UPDATE tbl_password_reset SET pr_status = 'Completed' WHERE pr_email = ? AND pr_status = 'Approved'";
+    try (Connection con = new dbConnector().getConnection();
+         PreparedStatement pst = con.prepareStatement(sql)) {
+        pst.setString(1, email);
+        pst.executeUpdate();
+    } catch (SQLException e) {
+        System.out.println("Database error: " + e.getMessage());
     }
 }
 

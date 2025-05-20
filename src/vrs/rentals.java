@@ -444,7 +444,7 @@ public class rentals extends javax.swing.JInternalFrame {
             Logger.logRentalAction(username, "View Rental Details", "Rental ID: " + rentalId);
             con = new dbConnector().getConnection();
             String query = "SELECT r.*, v.v_make, v.v_model, v.v_year, v.v_plate, v.v_image, " +
-                          "c.c_name, c.c_phone, c.c_email, c.c_license_number " +
+                          "c.c_name, c.c_phone, c.c_email, c.id_number " +
                           "FROM tbl_rentals r " +
                           "JOIN tbl_vehicles v ON r.r_vehicle_id = v.v_id " +
                           "JOIN tbl_clients c ON r.r_client_id = c.c_id " +
@@ -479,7 +479,7 @@ public class rentals extends javax.swing.JInternalFrame {
         txtClient.setText(rs.getString("c_name"));
         txtPhone.setText(rs.getString("c_phone"));
         txtEmail.setText(rs.getString("c_email"));
-        txtLicense.setText(rs.getString("c_license_number"));
+        txtLicense.setText(rs.getString("id_number"));
         txtStartDate.setText(dateFormat.format(rs.getDate("r_start_date")));
         txtEndDate.setText(dateFormat.format(rs.getDate("r_end_date")));
         txtAmount.setText("₱" + String.format("%.2f", rs.getDouble("r_total_amount")));

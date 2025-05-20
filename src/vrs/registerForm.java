@@ -9,6 +9,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.sql.*;
 import javax.swing.*;
+import vrs.SecurityQuestionsDialog;
 
 public class registerForm extends javax.swing.JFrame {
 
@@ -234,99 +235,115 @@ public class registerForm extends javax.swing.JFrame {
         // TODO add your handling code here:
     }                                       
 
-    private void registerActionPerformed(java.awt.event.ActionEvent evt) {                                         
-    String fullName = u_name.getText().trim();
-    String username = u_user.getText().trim();
-    String email = u_email.getText().trim();
-    String password = new String(u_pass.getPassword()).trim();
-    String confirmPassword = new String(c_pass.getPassword()).trim();
-    String phone = u_phone.getText().trim();
-    String role = (String) u_role.getSelectedItem();
+    private void registerActionPerformed(java.awt.event.ActionEvent evt) {                                          
+        String fullName = u_name.getText().trim();
+        String username = u_user.getText().trim();
+        String email = u_email.getText().trim();
+        String password = new String(u_pass.getPassword()).trim();
+        String confirmPassword = new String(c_pass.getPassword()).trim();
+        String phone = u_phone.getText().trim();
+        String role = (String) u_role.getSelectedItem();
 
-    System.out.println("Register button clicked!");
+        System.out.println("Register button clicked!");
 
-    // Basic validations
-    if (fullName.isEmpty() || username.isEmpty() || email.isEmpty() ||
-        password.isEmpty() || confirmPassword.isEmpty() || phone.isEmpty()) {
-        JOptionPane.showMessageDialog(this, "All fields are required!", "Error", JOptionPane.ERROR_MESSAGE);
-        System.out.println("Validation failed: Empty fields");
-        return;
-    }
-    if (!isValidEmail(email)) {
-        JOptionPane.showMessageDialog(this, "Invalid Email format!", "Error", JOptionPane.ERROR_MESSAGE);
-        System.out.println("Validation failed: Invalid Email");
-        return;
-    }
-    if (!isValidPassword(password) || !password.equals(confirmPassword)) {
-        JOptionPane.showMessageDialog(this, "Password must be at least 8 characters and match confirm password!", "Error", JOptionPane.ERROR_MESSAGE);
-        System.out.println("Validation failed: Password mismatch");
-        return;
-    }
-    if (!phone.matches("^[0-9-+ ]{10,15}$")) {
-        JOptionPane.showMessageDialog(this, "Invalid Phone Number! It must be 10-15 digits and may include + or -.", "Error", JOptionPane.ERROR_MESSAGE);
-        return;
-    }
-
-    String hashedPassword = hashPassword(password);
-    if (hashedPassword == null) {
-        JOptionPane.showMessageDialog(this, "Error hashing password!", "Error", JOptionPane.ERROR_MESSAGE);
-        return;
-    }
-
-    try {
-        Connection conn = new dbConnector().getConnection();
-        System.out.println("Connected to the database!");
-
-        // Check if user already exists
-        String checkQuery = "SELECT 1 FROM tbl_users WHERE u_username = ? OR u_email = ? UNION SELECT 1 FROM tbl_approval WHERE u_username = ? OR u_email = ?";
-        try (PreparedStatement checkStmt = conn.prepareStatement(checkQuery)) {
-            checkStmt.setString(1, username);
-            checkStmt.setString(2, email);
-            checkStmt.setString(3, username);
-            checkStmt.setString(4, email);
-            ResultSet rs = checkStmt.executeQuery();
-            if (rs.next()) {
-                JOptionPane.showMessageDialog(this, "User already exists!", "Error", JOptionPane.ERROR_MESSAGE);
-                System.out.println("User already exists!");
-                return;
-            }
+        // Basic validations
+        if (fullName.isEmpty() || username.isEmpty() || email.isEmpty() ||
+            password.isEmpty() || confirmPassword.isEmpty() || phone.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "All fields are required!", "Error", JOptionPane.ERROR_MESSAGE);
+            System.out.println("Validation failed: Empty fields");
+            return;
+        }
+        if (!isValidEmail(email)) {
+            JOptionPane.showMessageDialog(this, "Invalid Email format!", "Error", JOptionPane.ERROR_MESSAGE);
+            System.out.println("Validation failed: Invalid Email");
+            return;
+        }
+        if (!isValidPassword(password) || !password.equals(confirmPassword)) {
+            JOptionPane.showMessageDialog(this, "Password must be at least 8 characters and match confirm password!", "Error", JOptionPane.ERROR_MESSAGE);
+            System.out.println("Validation failed: Password mismatch");
+            return;
+        }
+        if (!phone.matches("^[0-9-+ ]{10,15}$")) {
+            JOptionPane.showMessageDialog(this, "Invalid Phone Number! It must be 10-15 digits and may include + or -.", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
         }
 
-        // Insert into tbl_approval for admin approval
-        String query = "INSERT INTO tbl_approval (u_name, u_username, u_email, u_password, u_phone, u_role, u_status) VALUES (?, ?, ?, ?, ?, ?, ?)";
-
-        try (PreparedStatement pst = conn.prepareStatement(query)) {
-            pst.setString(1, fullName);
-            pst.setString(2, username);
-            pst.setString(3, email);
-            pst.setString(4, hashedPassword);
-            pst.setString(5, phone);    
-            pst.setString(6, role);
-            pst.setString(7, "Pending");
-
-            int rowsAffected = pst.executeUpdate();
-            if (rowsAffected > 0) {
-                JOptionPane.showMessageDialog(this, "Registration request submitted! Please wait for admin approval.", "Success", JOptionPane.INFORMATION_MESSAGE);
-                System.out.println("Registration successful!");
-                // Clear the form
-                u_name.setText("");
-                u_user.setText("");
-                u_email.setText("");
-                u_pass.setText("");
-                c_pass.setText("");
-                u_phone.setText("");
-                u_role.setSelectedIndex(0);
-            } else {
-                JOptionPane.showMessageDialog(this, "Registration failed!", "Error", JOptionPane.ERROR_MESSAGE);
-                System.out.println("Database insert failed!");
-            }
+        String hashedPassword = hashPassword(password);
+        if (hashedPassword == null) {
+            JOptionPane.showMessageDialog(this, "Error hashing password!", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
         }
-        conn.close();
-    } catch (SQLException e) {
-        JOptionPane.showMessageDialog(this, "Database error: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-        System.out.println("SQL Exception: " + e.getMessage());
-    }
-}                                        
+
+        // Show security questions dialog
+        SecurityQuestionsDialog sqDialog = new SecurityQuestionsDialog(this);
+        sqDialog.setVisible(true);
+        if (!sqDialog.isConfirmed()) {
+            JOptionPane.showMessageDialog(this, "Registration cancelled. Security questions are required.", "Cancelled", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        String question1 = sqDialog.getSelectedQuestion1();
+        String question2 = sqDialog.getSelectedQuestion2();
+        String answer1 = hashPassword(sqDialog.getAnswer1().trim());
+        String answer2 = hashPassword(sqDialog.getAnswer2().trim());
+
+        try {
+            Connection conn = new dbConnector().getConnection();
+            System.out.println("Connected to the database!");
+
+            // Check if user already exists
+            String checkQuery = "SELECT 1 FROM tbl_users WHERE u_username = ? OR u_email = ? UNION SELECT 1 FROM tbl_approval WHERE u_username = ? OR u_email = ?";
+            try (PreparedStatement checkStmt = conn.prepareStatement(checkQuery)) {
+                checkStmt.setString(1, username);
+                checkStmt.setString(2, email);
+                checkStmt.setString(3, username);
+                checkStmt.setString(4, email);
+                ResultSet rs = checkStmt.executeQuery();
+                if (rs.next()) {
+                    JOptionPane.showMessageDialog(this, "User already exists!", "Error", JOptionPane.ERROR_MESSAGE);
+                    System.out.println("User already exists!");
+                    return;
+                }
+            }
+
+            // Insert into tbl_approval for admin approval, including security questions
+            String query = "INSERT INTO tbl_approval (u_name, u_username, u_email, u_password, u_phone, u_role, u_status, question1, answer1, question2, answer2) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
+            try (PreparedStatement pst = conn.prepareStatement(query)) {
+                pst.setString(1, fullName);
+                pst.setString(2, username);
+                pst.setString(3, email);
+                pst.setString(4, hashedPassword);
+                pst.setString(5, phone);    
+                pst.setString(6, role);
+                pst.setString(7, "Pending");
+                pst.setString(8, question1);
+                pst.setString(9, answer1);
+                pst.setString(10, question2);
+                pst.setString(11, answer2);
+
+                int rowsAffected = pst.executeUpdate();
+                if (rowsAffected > 0) {
+                    JOptionPane.showMessageDialog(this, "Registration request submitted! Please wait for admin approval.", "Success", JOptionPane.INFORMATION_MESSAGE);
+                    System.out.println("Registration successful!");
+                    // Clear the form
+                    u_name.setText("");
+                    u_user.setText("");
+                    u_email.setText("");
+                    u_pass.setText("");
+                    c_pass.setText("");
+                    u_phone.setText("");
+                    u_role.setSelectedIndex(0);
+                } else {
+                    JOptionPane.showMessageDialog(this, "Registration failed!", "Error", JOptionPane.ERROR_MESSAGE);
+                    System.out.println("Database insert failed!");
+                }
+            }
+            conn.close();
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(this, "Database error: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            System.out.println("SQL Exception: " + e.getMessage());
+        }
+    }                                         
 
     private void u_userActionPerformed(java.awt.event.ActionEvent evt) {                                       
         // TODO add your handling code here:

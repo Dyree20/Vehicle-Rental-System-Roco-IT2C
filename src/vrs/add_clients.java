@@ -34,7 +34,18 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
-
+import com.toedter.calendar.JDateChooser;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import javax.swing.JComboBox;
+import javax.swing.JFileChooser;
+import org.apache.pdfbox.pdmodel.*;
+import org.apache.pdfbox.pdmodel.common.PDRectangle;
+import org.apache.pdfbox.pdmodel.font.PDType1Font;
+import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject;
+import java.awt.image.BufferedImage;
+import javax.imageio.ImageIO;
 /**
  *
  * @author ROCO
@@ -220,7 +231,15 @@ public class add_clients extends javax.swing.JInternalFrame {
         priceLabel.setFont(new Font("Tahoma", Font.PLAIN, 12));
         
         JLabel statusLabel = new JLabel("Status: " + status);
-        statusLabel.setForeground(status.equals("available") ? Color.GREEN : Color.RED);
+        if (status.equalsIgnoreCase("available")) {
+            statusLabel.setForeground(new Color(0, 153, 0)); // Green
+        } else if (status.equalsIgnoreCase("rented")) {
+            statusLabel.setForeground(Color.RED);
+        } else if (status.equalsIgnoreCase("maintenance")) {
+            statusLabel.setForeground(new Color(255, 140, 0)); // Orange
+        } else {
+            statusLabel.setForeground(Color.GRAY);
+        }
         statusLabel.setFont(new Font("Tahoma", Font.BOLD, 12));
         
         // Add components
@@ -255,8 +274,23 @@ public class add_clients extends javax.swing.JInternalFrame {
         // Update the selected vehicle label
         lblSelectedVehicle.setText("Selected Vehicle: " + vehicleName);
         
-        // Enable the rent and view buttons
+        // Get the status from the card's status label
+        String status = null;
+        for (java.awt.Component comp : ((JPanel)cardPanel.getComponent(1)).getComponents()) {
+            if (comp instanceof JLabel) {
+                JLabel label = (JLabel) comp;
+                if (label.getText().startsWith("Status: ")) {
+                    status = label.getText().substring(8).trim();
+                    break;
+                }
+            }
+        }
+        // Enable the rent and view buttons only if available
+        if (status != null && status.equalsIgnoreCase("available")) {
         btnRentVehicle.setEnabled(true);
+        } else {
+            btnRentVehicle.setEnabled(false);
+        }
         btnViewDetails.setEnabled(true);
         
         // Repaint to show the changes
@@ -456,7 +490,7 @@ public class add_clients extends javax.swing.JInternalFrame {
     // Create rental dialog
     JDialog rentalDialog = new JDialog();
     rentalDialog.setTitle("Rent Vehicle");
-    rentalDialog.setSize(400, 400); // Increased height for date pickers
+    rentalDialog.setSize(400, 500);
     rentalDialog.setLocationRelativeTo(this);
     rentalDialog.setModal(true);
     rentalDialog.setLayout(new BorderLayout());
@@ -466,7 +500,7 @@ public class add_clients extends javax.swing.JInternalFrame {
     formPanel.setLayout(new BoxLayout(formPanel, BoxLayout.Y_AXIS));
     formPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
     
-    // Client name field
+    // Client name
     JPanel namePanel = new JPanel(new BorderLayout(5, 0));
     namePanel.add(new JLabel("Client Name:"), BorderLayout.WEST);
     JTextField txtClientName = new JTextField(20);
@@ -474,7 +508,7 @@ public class add_clients extends javax.swing.JInternalFrame {
     formPanel.add(namePanel);
     formPanel.add(Box.createVerticalStrut(10));
     
-    // Client phone field
+    // Phone
     JPanel phonePanel = new JPanel(new BorderLayout(5, 0));
     phonePanel.add(new JLabel("Phone Number:"), BorderLayout.WEST);
     JTextField txtClientPhone = new JTextField(20);
@@ -482,23 +516,31 @@ public class add_clients extends javax.swing.JInternalFrame {
     formPanel.add(phonePanel);
     formPanel.add(Box.createVerticalStrut(10));
     
-    // Client email field
+    // Email
     JPanel emailPanel = new JPanel(new BorderLayout(5, 0));
     emailPanel.add(new JLabel("Email Address:"), BorderLayout.WEST);
-    txtClientEmail = new JTextField(20);
+    JTextField txtClientEmail = new JTextField(20);
     emailPanel.add(txtClientEmail, BorderLayout.CENTER);
     formPanel.add(emailPanel);
     formPanel.add(Box.createVerticalStrut(10));
     
-    // Client license field
+    // ID Type
+    JComboBox<String> cboIdType = new JComboBox<>(new String[]{"Government ID", "Driver License", "National ID"});
+    JPanel idTypePanel = new JPanel(new BorderLayout(5, 0));
+    idTypePanel.add(new JLabel("ID Type:"), BorderLayout.WEST);
+    idTypePanel.add(cboIdType, BorderLayout.CENTER);
+    formPanel.add(idTypePanel);
+    formPanel.add(Box.createVerticalStrut(10));
+    
+    // ID Number
     JPanel licensePanel = new JPanel(new BorderLayout(5, 0));
-    licensePanel.add(new JLabel("License Number:"), BorderLayout.WEST);
+    licensePanel.add(new JLabel("ID Number:"), BorderLayout.WEST);
     JTextField txtClientLicense = new JTextField(20);
     licensePanel.add(txtClientLicense, BorderLayout.CENTER);
     formPanel.add(licensePanel);
     formPanel.add(Box.createVerticalStrut(10));
     
-    // Client address field
+    // Address
     JPanel addressPanel = new JPanel(new BorderLayout(5, 0));
     addressPanel.add(new JLabel("Address:"), BorderLayout.WEST);
     JTextField txtClientAddress = new JTextField(20);
@@ -506,48 +548,78 @@ public class add_clients extends javax.swing.JInternalFrame {
     formPanel.add(addressPanel);
     formPanel.add(Box.createVerticalStrut(10));
     
-    // Start date field (use JDateChooser from JCalendar library or com.toedter.calendar)
+    // --- Image Selector Styled Like ID Type ---
+    JPanel imagePanel = new JPanel(new BorderLayout(5, 0));
+    imagePanel.add(new JLabel("Profile Image:"), BorderLayout.WEST);
+    JButton btnSelectImage = new JButton("Select Image");
+    JLabel lblImagePreview = new JLabel("No Image");
+    lblImagePreview.setPreferredSize(new Dimension(80, 80));
+    final byte[][] clientImageBytes = {null};
+    btnSelectImage.addActionListener(e -> {
+        JFileChooser fileChooser = new JFileChooser();
+        int result = fileChooser.showOpenDialog(rentalDialog);
+        if (result == JFileChooser.APPROVE_OPTION) {
+            File selectedFile = fileChooser.getSelectedFile();
+            try {
+                clientImageBytes[0] = Files.readAllBytes(selectedFile.toPath());
+                ImageIcon icon = new ImageIcon(new ImageIcon(clientImageBytes[0]).getImage().getScaledInstance(80, 80, Image.SCALE_SMOOTH));
+                lblImagePreview.setIcon(icon);
+                lblImagePreview.setText(null);
+            } catch (IOException ex) {
+                JOptionPane.showMessageDialog(rentalDialog, "Error loading image: " + ex.getMessage());
+            }
+        }
+    });
+    JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+    rightPanel.add(btnSelectImage);
+    rightPanel.add(lblImagePreview);
+    imagePanel.add(rightPanel, BorderLayout.CENTER);
+    formPanel.add(imagePanel);
+    formPanel.add(Box.createVerticalStrut(10));
+    // --- End Image Selector ---
+    
+    // Start Date
+    JDateChooser startDateChooser = new JDateChooser();
     JPanel startDatePanel = new JPanel(new BorderLayout(5, 0));
     startDatePanel.add(new JLabel("Start Date:"), BorderLayout.WEST);
-    
-    // For simplicity, let's use a formatted text field instead of JDateChooser
-    JTextField txtStartDate = new JTextField(20);
-    txtStartDate.setText(new java.text.SimpleDateFormat("yyyy-MM-dd").format(new java.util.Date()));
-    startDatePanel.add(txtStartDate, BorderLayout.CENTER);
-    
+    startDatePanel.add(startDateChooser, BorderLayout.CENTER);
     formPanel.add(startDatePanel);
     formPanel.add(Box.createVerticalStrut(10));
     
-    // End date field
+    // End Date
+    JDateChooser endDateChooser = new JDateChooser();
     JPanel endDatePanel = new JPanel(new BorderLayout(5, 0));
     endDatePanel.add(new JLabel("End Date:"), BorderLayout.WEST);
-    
-    // For simplicity, let's use a formatted text field
-    JTextField txtEndDate = new JTextField(20);
-    // Set default end date to one week later
-    java.util.Calendar cal = java.util.Calendar.getInstance();
-    cal.add(java.util.Calendar.WEEK_OF_YEAR, 1);
-    txtEndDate.setText(new java.text.SimpleDateFormat("yyyy-MM-dd").format(cal.getTime()));
-    
-    endDatePanel.add(txtEndDate, BorderLayout.CENTER);
+    endDatePanel.add(endDateChooser, BorderLayout.CENTER);
     formPanel.add(endDatePanel);
     formPanel.add(Box.createVerticalStrut(10));
     
-    // Number of weeks (calculated field)
+    // Number of weeks (calculated)
     JPanel weeksPanel = new JPanel(new BorderLayout(5, 0));
     weeksPanel.add(new JLabel("Number of Weeks:"), BorderLayout.WEST);
     JTextField txtWeeks = new JTextField(20);
-    txtWeeks.setText("1"); // Default 1 week
-    txtWeeks.setEditable(false); // This is calculated
+    txtWeeks.setEditable(false);
     weeksPanel.add(txtWeeks, BorderLayout.CENTER);
     formPanel.add(weeksPanel);
     formPanel.add(Box.createVerticalStrut(10));
     
-    // Add listeners to update weeks when dates change
-    txtStartDate.addActionListener(e -> updateWeekCalculation(txtStartDate, txtEndDate, txtWeeks));
-    txtEndDate.addActionListener(e -> updateWeekCalculation(txtStartDate, txtEndDate, txtWeeks));
+    // Update weeks when dates change
+    Runnable updateWeeks = () -> {
+        java.util.Date start = startDateChooser.getDate();
+        java.util.Date end = endDateChooser.getDate();
+        if (start != null && end != null && !end.before(start)) {
+            long diffInMillies = Math.abs(end.getTime() - start.getTime());
+            long diffInDays = java.util.concurrent.TimeUnit.DAYS.convert(diffInMillies, java.util.concurrent.TimeUnit.MILLISECONDS);
+            int weeks = (int) Math.ceil(diffInDays / 7.0);
+            txtWeeks.setText(String.valueOf(weeks > 0 ? weeks : 1));
+        } else {
+            txtWeeks.setText("1");
+        }
+    };
+    startDateChooser.getDateEditor().addPropertyChangeListener(e -> updateWeeks.run());
+    endDateChooser.getDateEditor().addPropertyChangeListener(e -> updateWeeks.run());
     
-    // Buttons panel
+    // Buttons
     JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
     JButton rentButton = new JButton("Rent");
     JButton cancelButton = new JButton("Cancel");
@@ -556,45 +628,34 @@ public class add_clients extends javax.swing.JInternalFrame {
         String clientName = txtClientName.getText().trim();
         String clientPhone = txtClientPhone.getText().trim();
         String clientEmail = txtClientEmail.getText().trim();
+        String idType = (String) cboIdType.getSelectedItem();
         String clientLicense = txtClientLicense.getText().trim();
         String clientAddress = txtClientAddress.getText().trim();
-        String startDate = txtStartDate.getText().trim();
-        String endDate = txtEndDate.getText().trim();
+        java.util.Date startDate = startDateChooser.getDate();
+        java.util.Date endDate = endDateChooser.getDate();
         
-        // Validate inputs
+        // Validate
         if (clientName.isEmpty() || clientPhone.isEmpty() || clientEmail.isEmpty() || 
-            clientLicense.isEmpty() || clientAddress.isEmpty() || startDate.isEmpty() || endDate.isEmpty()) {
-            JOptionPane.showMessageDialog(rentalDialog, "Please fill in all fields.");
+            clientLicense.isEmpty() || clientAddress.isEmpty() || idType == null ||
+            startDate == null || endDate == null) {
+            JOptionPane.showMessageDialog(rentalDialog, "Please fill in all fields and select valid dates.");
             return;
         }
-        
-        // Email validation
         if (!clientEmail.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,6}$")) {
             JOptionPane.showMessageDialog(rentalDialog, "Please enter a valid email address.");
             return;
         }
-        
-        // Date validation
-        java.text.SimpleDateFormat dateFormat = new java.text.SimpleDateFormat("yyyy-MM-dd");
-        dateFormat.setLenient(false);
-        try {
-            java.util.Date start = dateFormat.parse(startDate);
-            java.util.Date end = dateFormat.parse(endDate);
-            
-            if (end.before(start)) {
+        if (endDate.before(startDate)) {
                 JOptionPane.showMessageDialog(rentalDialog, "End date cannot be before start date.");
                 return;
             }
-        } catch (java.text.ParseException ex) {
-            JOptionPane.showMessageDialog(rentalDialog, "Please enter valid dates in yyyy-MM-dd format.");
-            return;
-        }
-        
-        // Process rental with custom start and end dates
-        if (processRentalWithCustomDates(selectedVehicleId, clientName, clientPhone, clientEmail, clientLicense, clientAddress, startDate, endDate)) {
+        String startDateStr = new java.text.SimpleDateFormat("yyyy-MM-dd").format(startDate);
+        String endDateStr = new java.text.SimpleDateFormat("yyyy-MM-dd").format(endDate);
+        int weeks = Integer.parseInt(txtWeeks.getText());
+        if (processRentalWithCustomDates(selectedVehicleId, clientName, clientPhone, clientEmail, idType, clientLicense, clientAddress, startDateStr, endDateStr, clientImageBytes[0], weeks)) {
             rentalDialog.dispose();
-            loadVehicleCards(); // Refresh vehicle list
-            resetSelection();   // Reset vehicle selection
+            loadVehicleCards();
+            resetSelection();
         }
     });
     
@@ -607,45 +668,118 @@ public class add_clients extends javax.swing.JInternalFrame {
     rentalDialog.add(buttonPanel, BorderLayout.SOUTH);
     rentalDialog.setVisible(true);
 }
-// Method to update weeks calculation when dates change
-private void updateWeekCalculation(JTextField startDateField, JTextField endDateField, JTextField weeksField) {
-    try {
-        java.text.SimpleDateFormat dateFormat = new java.text.SimpleDateFormat("yyyy-MM-dd");
-        java.util.Date startDate = dateFormat.parse(startDateField.getText());
-        java.util.Date endDate = dateFormat.parse(endDateField.getText());
-        
-        // Calculate difference in milliseconds
-        long diffInMillies = Math.abs(endDate.getTime() - startDate.getTime());
-        // Convert to days
-        long diffInDays = java.util.concurrent.TimeUnit.DAYS.convert(diffInMillies, java.util.concurrent.TimeUnit.MILLISECONDS);
-        // Calculate weeks (rounded up)
-        int weeks = (int) Math.ceil(diffInDays / 7.0);
-        
-        weeksField.setText(String.valueOf(weeks));
-    } catch (java.text.ParseException ex) {
-        weeksField.setText("Error");
-    }
+
+    private void btnViewDetailsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnViewDetailsActionPerformed
+        if (selectedVehicleId == -1) {
+            JOptionPane.showMessageDialog(this, "Please select a vehicle first", "No Selection", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        try {
+            Connection con = new dbConnector().getConnection();
+            String query = "SELECT * FROM tbl_vehicles WHERE v_id = ?";
+            PreparedStatement pst = con.prepareStatement(query);
+            pst.setInt(1, selectedVehicleId);
+            ResultSet rs = pst.executeQuery();
+            if (rs.next()) {
+                StringBuilder details = new StringBuilder();
+                details.append("VEHICLE DETAILS\n\n");
+                details.append("ID: ").append(rs.getInt("v_id")).append("\n");
+                details.append("Make: ").append(rs.getString("v_make")).append("\n");
+                details.append("Model: ").append(rs.getString("v_model")).append("\n");
+                details.append("Year: ").append(rs.getString("v_year")).append("\n");
+                details.append("Plate Number: ").append(rs.getString("v_plate")).append("\n");
+                details.append("Weekly Rate: ₱").append(rs.getString("v_rate")).append("\n");
+                details.append("Status: ").append(rs.getString("v_status")).append("\n");
+                String status = rs.getString("v_status");
+                if (status.equalsIgnoreCase("rented")) {
+                    // Query rental and client info for dialog display
+                    try {
+                        Connection con2 = new dbConnector().getConnection();
+                        String rentalQuery = "SELECT r.r_start_date, r.r_end_date, r.r_total_amount, c.c_name, c.c_phone, c.c_email, c.c_address, c.c_image FROM tbl_rentals r JOIN tbl_clients c ON r.r_client_id = c.c_id WHERE r.r_vehicle_id = ? AND r.r_status = 'active'";
+                        PreparedStatement pst2 = con2.prepareStatement(rentalQuery);
+                        pst2.setInt(1, selectedVehicleId);
+                        ResultSet rs2 = pst2.executeQuery();
+                        if (rs2.next()) {
+                            showAgreementDialog(
+                                details.toString(),
+                                rs2.getString("c_name"),
+                                rs2.getString("c_phone"),
+                                rs2.getString("c_email"),
+                                rs2.getString("c_address"),
+                                rs2.getString("r_start_date"),
+                                rs2.getString("r_end_date"),
+                                String.format("%.2f", rs2.getDouble("r_total_amount")),
+                                rs.getString("v_make") + " " + rs.getString("v_model"),
+                                rs.getString("v_year"),
+                                rs.getString("v_plate"),
+                                rs2.getBytes("c_image")
+                            );
+                        } else {
+                            JOptionPane.showMessageDialog(this, "No active rental found for this vehicle.");
+                        }
+                        rs2.close();
+                        pst2.close();
+                        con2.close();
+                    } catch (Exception ex) {
+                        JOptionPane.showMessageDialog(this, "Error loading rental/client info: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                    }
+                } else {
+                    // Show normal details dialog
+                    JOptionPane.showMessageDialog(this, details.toString(), "Vehicle Details", JOptionPane.INFORMATION_MESSAGE);
+                }
+            }
+            rs.close();
+            pst.close();
+            con.close();
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(this, "Error retrieving vehicle details: " + e.getMessage(), "Database Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }//GEN-LAST:event_btnViewDetailsActionPerformed
+
+    private void edit_clientActionPerformed(java.awt.event.ActionEvent evt) {
+        if (selectedVehicleId == -1) {
+            JOptionPane.showMessageDialog(this, "Please select a vehicle to edit.", "No Selection", JOptionPane.WARNING_MESSAGE);
+            return;
 }
-// Modified process rental method with custom dates
-private boolean processRentalWithCustomDates(int vehicleId, String name, String phone, String email, String license, String address, String startDate, String endDate) {
+        // Add your edit functionality here
+        JOptionPane.showMessageDialog(this, "Edit functionality for vehicle ID: " + selectedVehicleId, "Edit Vehicle", JOptionPane.INFORMATION_MESSAGE);
+    }
+
+    private boolean processRentalWithCustomDates(
+        int vehicleId,
+        String name,
+        String phone,
+        String email,
+        String idType,
+        String idNumber,
+        String address,
+        String startDate,
+        String endDate,
+        byte[] imageBytes,
+        int weeks
+    ) {
     try {
         Connection con = new dbConnector().getConnection();
-        con.setAutoCommit(false); // Start transaction
+            con.setAutoCommit(false);
         
-        // Insert client if new, or get existing client ID
-        String clientQuery = "INSERT INTO tbl_clients (c_name, c_phone, c_email, c_license_number, c_address) VALUES (?, ?, ?, ?, ?) " +
-                           "ON DUPLICATE KEY UPDATE c_phone=?, c_email=?, c_license_number=?, c_address=?";
-        
+            // Insert or update client
+            String clientQuery = "INSERT INTO tbl_clients (c_name, c_phone, c_email, id_type, id_number, c_address, c_image) VALUES (?, ?, ?, ?, ?, ?, ?) " +
+                                 "ON DUPLICATE KEY UPDATE c_phone=?, c_email=?, id_type=?, id_number=?, c_address=?, c_image=?";
         PreparedStatement clientStmt = con.prepareStatement(clientQuery, Statement.RETURN_GENERATED_KEYS);
         clientStmt.setString(1, name);
         clientStmt.setString(2, phone);
         clientStmt.setString(3, email);
-        clientStmt.setString(4, license);
-        clientStmt.setString(5, address);
-        clientStmt.setString(6, phone);
-        clientStmt.setString(7, email);
-        clientStmt.setString(8, license);
-        clientStmt.setString(9, address);
+            clientStmt.setString(4, idType);
+            clientStmt.setString(5, idNumber);
+            clientStmt.setString(6, address);
+            clientStmt.setBytes(7, imageBytes);
+            clientStmt.setString(8, phone);
+            clientStmt.setString(9, email);
+            clientStmt.setString(10, idType);
+            clientStmt.setString(11, idNumber);
+            clientStmt.setString(12, address);
+            clientStmt.setBytes(13, imageBytes);
+
         int clientResult = clientStmt.executeUpdate();
         
         // Get client ID
@@ -654,13 +788,11 @@ private boolean processRentalWithCustomDates(int vehicleId, String name, String 
         if (rs.next()) {
             clientId = rs.getInt(1);
         } else {
-            // Get client ID if already exists
             String getClientQuery = "SELECT c_id FROM tbl_clients WHERE c_name = ? AND c_phone = ?";
             PreparedStatement getClientStmt = con.prepareStatement(getClientQuery);
             getClientStmt.setString(1, name);
             getClientStmt.setString(2, phone);
             ResultSet clientRs = getClientStmt.executeQuery();
-            
             if (clientRs.next()) {
                 clientId = clientRs.getInt("c_id");
                 clientRs.close();
@@ -693,31 +825,17 @@ private boolean processRentalWithCustomDates(int vehicleId, String name, String 
         rateRs.close();
         rateStmt.close();
         
-        // Calculate weeks and total amount
-        java.text.SimpleDateFormat dateFormat = new java.text.SimpleDateFormat("yyyy-MM-dd");
-        java.util.Date start = dateFormat.parse(startDate);
-        java.util.Date end = dateFormat.parse(endDate);
-        
-        // Calculate difference in milliseconds
-        long diffInMillies = Math.abs(end.getTime() - start.getTime());
-        // Convert to days
-        long diffInDays = java.util.concurrent.TimeUnit.DAYS.convert(diffInMillies, java.util.concurrent.TimeUnit.MILLISECONDS);
-        // Calculate weeks (rounded up)
-        int weeks = (int) Math.ceil(diffInDays / 7.0);
-        
         // Calculate total amount (weekly rate * number of weeks)
         double totalAmount = rate * weeks;
         
-        // Create rental record with custom dates
+            // Create rental record
         String rentalQuery = "INSERT INTO tbl_rentals (r_vehicle_id, r_client_id, r_start_date, r_end_date, " +
-                           "r_total_amount, r_status, r_created_by) VALUES " +
-                           "(?, ?, ?, ?, ?, 'active', ?)";
-        
+                                 "r_total_amount, r_status, r_created_by) VALUES (?, ?, ?, ?, ?, 'active', ?)";
         PreparedStatement rentalStmt = con.prepareStatement(rentalQuery);
         rentalStmt.setInt(1, vehicleId);
         rentalStmt.setInt(2, clientId);
-        rentalStmt.setString(3, startDate); // Use the provided start date
-        rentalStmt.setString(4, endDate);   // Use the provided end date
+            rentalStmt.setString(3, startDate);
+            rentalStmt.setString(4, endDate);
         rentalStmt.setDouble(5, totalAmount);
         rentalStmt.setString(6, "system"); // Replace with actual user if available
         
@@ -745,130 +863,145 @@ private boolean processRentalWithCustomDates(int vehicleId, String name, String 
         JOptionPane.showMessageDialog(this, "Vehicle rented successfully for " + weeks + " weeks!\nTotal Amount: ₱" + totalAmount);
         return true;
         
-    } catch (SQLException | java.text.ParseException ex) {
+        } catch (SQLException ex) {
         JOptionPane.showMessageDialog(this, "Error processing rental: " + ex.getMessage(), 
                 "Database Error", JOptionPane.ERROR_MESSAGE);
         return false;
     }
 }
 
-    private void btnViewDetailsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnViewDetailsActionPerformed
-        if (selectedVehicleId == -1) {
-            JOptionPane.showMessageDialog(this, "Please select a vehicle first", "No Selection", JOptionPane.WARNING_MESSAGE);
-            return;
+    private void showAgreementDialog(String vehicleDetails, String clientName, String clientPhone, String clientEmail, String clientAddress, String startDate, String endDate, String totalAmount, String vehicle, String year, String plate, byte[] clientImage) {
+        JDialog dialog = new JDialog(SwingUtilities.getWindowAncestor(this), "Rental Agreement Preview", Dialog.ModalityType.APPLICATION_MODAL);
+        dialog.setSize(500, 700);
+        dialog.setLocationRelativeTo(this);
+        dialog.setLayout(new BorderLayout());
+
+        // Preview panel (styled like the print panel)
+        JPanel previewPanel = new JPanel();
+        previewPanel.setLayout(new BoxLayout(previewPanel, BoxLayout.Y_AXIS));
+        previewPanel.setBackground(Color.WHITE);
+        previewPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+
+        JLabel title = new JLabel("CAR RENTAL AGREEMENT");
+        title.setFont(new Font("Arial", Font.BOLD, 18));
+        title.setAlignmentX(JLabel.CENTER_ALIGNMENT);
+        previewPanel.add(title);
+        previewPanel.add(Box.createVerticalStrut(10));
+
+        // Client image
+        JLabel imageLabel = new JLabel();
+        imageLabel.setAlignmentX(JLabel.CENTER_ALIGNMENT);
+        if (clientImage != null && clientImage.length > 0) {
+            ImageIcon icon = new ImageIcon(clientImage);
+            Image img = icon.getImage().getScaledInstance(100, 100, Image.SCALE_SMOOTH);
+            imageLabel.setIcon(new ImageIcon(img));
+        } else {
+            imageLabel.setText("No Image");
         }
-        try {
-            Connection con = new dbConnector().getConnection();
-            String query = "SELECT * FROM tbl_vehicles WHERE v_id = ?";
-            PreparedStatement pst = con.prepareStatement(query);
-            pst.setInt(1, selectedVehicleId);
-            ResultSet rs = pst.executeQuery();
-            if (rs.next()) {
-                StringBuilder details = new StringBuilder();
-                details.append("VEHICLE DETAILS\n\n");
-                details.append("ID: ").append(rs.getInt("v_id")).append("\n");
-                details.append("Make: ").append(rs.getString("v_make")).append("\n");
-                details.append("Model: ").append(rs.getString("v_model")).append("\n");
-                details.append("Year: ").append(rs.getString("v_year")).append("\n");
-                details.append("Plate Number: ").append(rs.getString("v_plate")).append("\n");
-                details.append("Weekly Rate: ₱").append(rs.getString("v_rate")).append("\n");
-                details.append("Status: ").append(rs.getString("v_status")).append("\n");
-                String status = rs.getString("v_status");
-                if (status.equalsIgnoreCase("rented")) {
-                    // Query rental and client info for dialog display
-                    StringBuilder extraInfo = new StringBuilder();
-                    try {
-                        Connection con2 = new dbConnector().getConnection();
-                        String rentalQuery = "SELECT r.r_start_date, r.r_end_date, r.r_total_amount, c.c_name, c.c_phone, c.c_email, c.c_address FROM tbl_rentals r JOIN tbl_clients c ON r.r_client_id = c.c_id WHERE r.r_vehicle_id = ? AND r.r_status = 'active'";
-                        PreparedStatement pst2 = con2.prepareStatement(rentalQuery);
-                        pst2.setInt(1, selectedVehicleId);
-                        ResultSet rs2 = pst2.executeQuery();
-                        if (rs2.next()) {
-                            extraInfo.append("\n--- RENTAL RECEIPT ---\n");
-                            extraInfo.append("Client Name: ").append(rs2.getString("c_name")).append("\n");
-                            extraInfo.append("Phone: ").append(rs2.getString("c_phone")).append("\n");
-                            extraInfo.append("Email: ").append(rs2.getString("c_email")).append("\n");
-                            extraInfo.append("Address: ").append(rs2.getString("c_address")).append("\n");
-                            extraInfo.append("Start Date: ").append(rs2.getString("r_start_date")).append("\n");
-                            extraInfo.append("End Date: ").append(rs2.getString("r_end_date")).append("\n");
-                            extraInfo.append("Total Amount: ₱").append(String.format("%.2f", rs2.getDouble("r_total_amount"))).append("\n");
-                        }
-                        rs2.close();
-                        pst2.close();
-                        con2.close();
-                    } catch (Exception ex) {
-                        extraInfo.append("\n[Error loading rental/client info]");
+        previewPanel.add(imageLabel);
+        previewPanel.add(Box.createVerticalStrut(10));
+
+        previewPanel.add(new JLabel("Renter: " + clientName));
+        previewPanel.add(new JLabel("Phone: " + clientPhone));
+        previewPanel.add(new JLabel("Email: " + clientEmail));
+        previewPanel.add(new JLabel("Address: " + clientAddress));
+        previewPanel.add(Box.createVerticalStrut(10));
+        previewPanel.add(new JLabel("Start Date: " + startDate));
+        previewPanel.add(new JLabel("End Date: " + endDate));
+        previewPanel.add(new JLabel("Total Amount: ₱" + totalAmount));
+        previewPanel.add(Box.createVerticalStrut(10));
+        previewPanel.add(new JLabel("Vehicle: " + vehicle));
+        previewPanel.add(new JLabel("Year: " + year));
+        previewPanel.add(new JLabel("Plate: " + plate));
+        previewPanel.add(Box.createVerticalStrut(20));
+        previewPanel.add(Box.createVerticalStrut(30));
+        JLabel signatureLabel = new JLabel("Client Signature: __________________________");
+        signatureLabel.setFont(new Font("Arial", Font.PLAIN, 14));
+        signatureLabel.setAlignmentX(JLabel.LEFT_ALIGNMENT);
+        previewPanel.add(signatureLabel);
+        previewPanel.add(Box.createVerticalStrut(10));
+
+        JScrollPane scrollPane = new JScrollPane(previewPanel);
+        dialog.add(scrollPane, BorderLayout.CENTER);
+
+        // Button panel
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        JButton savePdfBtn = new JButton("Save as PDF");
+        JButton printBtn = new JButton("Print");
+        JButton closeBtn = new JButton("Close");
+        buttonPanel.add(savePdfBtn);
+        buttonPanel.add(printBtn);
+        buttonPanel.add(closeBtn);
+        dialog.add(buttonPanel, BorderLayout.SOUTH);
+
+        // Save as PDF action
+        savePdfBtn.addActionListener(ev -> {
+            JFileChooser fileChooser = new JFileChooser();
+            fileChooser.setDialogTitle("Save as PDF");
+            fileChooser.setSelectedFile(new File("rental_agreement.pdf"));
+            int userSelection = fileChooser.showSaveDialog(dialog);
+            if (userSelection == JFileChooser.APPROVE_OPTION) {
+                File fileToSave = fileChooser.getSelectedFile();
+                try (PDDocument doc = new PDDocument()) {
+                    PDPage page = new PDPage(PDRectangle.LETTER);
+                    doc.addPage(page);
+                    PDPageContentStream content = new PDPageContentStream(doc, page);
+                    float y = page.getMediaBox().getHeight() - 50;
+                    content.setFont(PDType1Font.TIMES_BOLD, 18);
+                    content.beginText();
+                    content.newLineAtOffset(200, y);
+                    content.showText("CAR RENTAL AGREEMENT");
+                    content.endText();
+                    y -= 40;
+                    if (clientImage != null && clientImage.length > 0) {
+                        BufferedImage bimg = ImageIO.read(new java.io.ByteArrayInputStream(clientImage));
+                        PDImageXObject pdImage = PDImageXObject.createFromByteArray(doc, clientImage, "client");
+                        content.drawImage(pdImage, 50, y - 100, 100, 100);
                     }
-                    // Show custom dialog with Print Receipt button
-                    JTextArea textArea = new JTextArea(details.toString() + extraInfo.toString());
-                    textArea.setEditable(false);
-                    JScrollPane scrollPane = new JScrollPane(textArea);
-                    JButton printButton = new JButton("Print Receipt");
-                    printButton.addActionListener(e -> {
-                        try {
-                            // Query rental and client info for printing (same as before)
-                            Connection con2 = new dbConnector().getConnection();
-                            String rentalQuery = "SELECT r.r_start_date, r.r_end_date, r.r_total_amount, c.c_name, c.c_phone, c.c_email, c.c_address FROM tbl_rentals r JOIN tbl_clients c ON r.r_client_id = c.c_id WHERE r.r_vehicle_id = ? AND r.r_status = 'active'";
-                            PreparedStatement pst2 = con2.prepareStatement(rentalQuery);
-                            pst2.setInt(1, selectedVehicleId);
-                            ResultSet rs2 = pst2.executeQuery();
-                            StringBuilder receipt = new StringBuilder();
-                            receipt.append(details.toString());
-                            if (rs2.next()) {
-                                receipt.append("\n--- RENTAL RECEIPT ---\n");
-                                receipt.append("Client Name: ").append(rs2.getString("c_name")).append("\n");
-                                receipt.append("Phone: ").append(rs2.getString("c_phone")).append("\n");
-                                receipt.append("Email: ").append(rs2.getString("c_email")).append("\n");
-                                receipt.append("Address: ").append(rs2.getString("c_address")).append("\n");
-                                receipt.append("Start Date: ").append(rs2.getString("r_start_date")).append("\n");
-                                receipt.append("End Date: ").append(rs2.getString("r_end_date")).append("\n");
-                                receipt.append("Total Amount: ₱").append(String.format("%.2f", rs2.getDouble("r_total_amount"))).append("\n");
-                            } else {
-                                receipt.append("\nNo active rental found for this vehicle.");
-                            }
-                            rs2.close();
-                            pst2.close();
-                            con2.close();
-                            // Print the receipt
-                            JTextArea printArea = new JTextArea(receipt.toString());
-                            boolean complete = printArea.print();
-                            if (complete) {
-                                JOptionPane.showMessageDialog(this, "Receipt sent to printer.", "Print", JOptionPane.INFORMATION_MESSAGE);
-                            } else {
-                                JOptionPane.showMessageDialog(this, "Printing was cancelled.", "Print", JOptionPane.WARNING_MESSAGE);
-                            }
-                        } catch (Exception ex) {
-                            JOptionPane.showMessageDialog(this, "Error printing receipt: " + ex.getMessage(), "Print Error", JOptionPane.ERROR_MESSAGE);
+                    y -= 20;
+                    content.setFont(PDType1Font.TIMES_ROMAN, 12);
+                    String[] lines = {
+                        "Renter: " + clientName,
+                        "Phone: " + clientPhone,
+                        "Email: " + clientEmail,
+                        "Address: " + clientAddress,
+                        "Start Date: " + startDate,
+                        "End Date: " + endDate,
+                        "Total Amount: ₱" + totalAmount,
+                        "Vehicle: " + vehicle,
+                        "Year: " + year,
+                        "Plate: " + plate,
+                        "",
+                        "Client Signature: __________________________"
+                    };
+                    for (String line : lines) {
+                        y -= 20;
+                        content.beginText();
+                        content.newLineAtOffset(50, y);
+                        content.showText(line);
+                        content.endText();
                         }
-                    });
-                    JPanel panel = new JPanel(new BorderLayout());
-                    panel.add(scrollPane, BorderLayout.CENTER);
-                    panel.add(printButton, BorderLayout.SOUTH);
-                    JDialog dialog = new JDialog(SwingUtilities.getWindowAncestor(this), "Vehicle Details", Dialog.ModalityType.APPLICATION_MODAL);
-                    dialog.getContentPane().add(panel);
-                    dialog.setSize(350, 350);
-                    dialog.setLocationRelativeTo(this);
-                    dialog.setVisible(true);
-                } else {
-                    // Show normal details dialog
-                    JOptionPane.showMessageDialog(this, details.toString(), "Vehicle Details", JOptionPane.INFORMATION_MESSAGE);
+                    content.close();
+                    doc.save(fileToSave);
+                    JOptionPane.showMessageDialog(dialog, "PDF saved successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
+                    } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(dialog, "Error saving PDF: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
                 }
             }
-            rs.close();
-            pst.close();
-            con.close();
-        } catch (SQLException e) {
-            JOptionPane.showMessageDialog(this, "Error retrieving vehicle details: " + e.getMessage(), "Database Error", JOptionPane.ERROR_MESSAGE);
-        }
-    }//GEN-LAST:event_btnViewDetailsActionPerformed
+        });
 
-    private void edit_clientActionPerformed(java.awt.event.ActionEvent evt) {
-        if (selectedVehicleId == -1) {
-            JOptionPane.showMessageDialog(this, "Please select a vehicle to edit.", "No Selection", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-        // Add your edit functionality here
-        JOptionPane.showMessageDialog(this, "Edit functionality for vehicle ID: " + selectedVehicleId, "Edit Vehicle", JOptionPane.INFORMATION_MESSAGE);
+        // Print action
+        printBtn.addActionListener(ev -> {
+            try {
+                previewPanel.print(null);
+                JOptionPane.showMessageDialog(dialog, "Receipt sent to printer.", "Print", JOptionPane.INFORMATION_MESSAGE);
+                        } catch (Exception ex) {
+                JOptionPane.showMessageDialog(dialog, "Error printing: " + ex.getMessage(), "Print Error", JOptionPane.ERROR_MESSAGE);
+                        }
+                    });
+
+        closeBtn.addActionListener(ev -> dialog.dispose());
+                    dialog.setVisible(true);
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
